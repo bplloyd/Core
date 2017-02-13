@@ -1,0 +1,37 @@
+Package: Core
+Type: Package
+Title: What the Package Does (Title Case)
+Version: 0.1.0
+Author: Who wrote it
+Maintainer: The package maintainer <yourself@somewhere.net>
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Imports: Rcpp (>= 0.12.9),
+    xts,
+    tvm,
+    lubridate,
+    tidyquant,
+    dtplyr,
+    dplyr,
+    data.table,
+    RODBC,
+    zoo,
+    magrittr
+LinkingTo: Rcpp
+Collate: 
+    'cull_Data.R'
+    'calc_privatePerformance.R'
+    'abbToStrategy.R'
+    'executeSP.R'
+    'get_privateValuations.R'
+    'get_privateCashFlows.R'
+    'get_privateCommitments.R'
+    'get_privateHoldings.R'
+    'calc_distributionRate.R'
+    'calc_drawdownRate.R'
+    'PrivateFund.R'
+    'RcppExports.R'
+    'hello.R'
