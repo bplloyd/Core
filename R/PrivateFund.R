@@ -7,6 +7,7 @@
 #' @include get_privateValuations.R
 #' @include calc_privatePerformance.R
 #' @include cull_Data.R
+#' @include calc_PME.R
 
 setOldClass(c("xts"))
 
@@ -19,6 +20,8 @@ setClass("PrivateFund",
                                 Commitments = "xts",
                                 PeriodData = "xts",
                                 Holdings = "data.frame",
+                                UnderlyingVintages = "list",
+                                UnderlyingStrategies = "list",
                                 UnderlyingFunds = "list",
                                 InitialCommitment = "numeric",
                                 TotalCommitment = "numeric",
@@ -47,11 +50,17 @@ setMethod("initialize",
                    fmv = NULL,
                    periodData = NULL,
                    holdings = NULL,
+                   underlyingVintages = list(),
+                   underlyingStrategies = list(),
                    underlyingFunds = list(),
                    freq = "d",
                    dataFreq = "m",
                    multiplier = 1e+06,
-                   active = NA_integer_
+                   active = NA_integer_,
+                   publicBM = NULL,
+                   loadVintages = F,
+                   loadStrategies = F,
+                   loadFunds = F
                    ){
 
             if(is.na(id))
@@ -99,14 +108,14 @@ setMethod("initialize",
               holdings = get_privateHoldings(id = id, strategy = strategy, vintage = vintage, active = active)
 
 
-              .Object@Vintage = as.integer(Holdings$Vintage)
-              .Object@Strategy = as.character(Holdings$Strategy)
-              .Object@Active = as.integer(Holdings$Active)
-              .Object@InitialCommitment = as.numeric(Holdings$Initial_Commitment_USD)/multiplier
+              .Object@Vintage = as.integer(holdings$Vintage)
+              .Object@Strategy = as.character(holdings$Strategy)
+              .Object@Active = as.integer(holdings$Active)
+              .Object@InitialCommitment = as.numeric(holdings$Initial_Commitment_USD)/multiplier
 
 
               if(is.na(name))
-                name = as.character(Holdings$Holding_Name[1])
+                name = as.character(holdings$Holding_Name[1])
 
 
             }
@@ -145,7 +154,10 @@ setMethod("initialize",
             {
               fmv = get_privateValuations(id = id, strategy = strategy, vintage = vintage, active = active, freq = freq, multiplier = multiplier)
             }
+            if(is.null(publicBM))
+              publicBM = loadIndices("SPTR")
 
+            pme = calc_PME(cashFlows[, "CashFlows_Net"], fmv = fmv, bm = publicBM)
             commit = sum(commitments)
             called_net = sum(cashFlows[, "Calls_Total_Net"])
             called_gross = sum(cashFlows[, "Calls_Total_Gross"])
@@ -157,9 +169,12 @@ setMethod("initialize",
                                   Called_wo_Fees = called_gross,
                                   Distributed = dists,
                                   FMV = fmv_end)
+
+
             colnames(cf_stats)[2:3] = c("Called_w_Fees", "Called_wo_Fees")
 
             stats = list(Performance = try(calc_privatePerformance(cashFlows, fmv)),
+                         PME_Performance = try(calc_privatePerformance(cashFlows, pme)),
                          CashFlows = try(cf_stats))
 
             .Object@Commitments = commitments
@@ -170,8 +185,17 @@ setMethod("initialize",
             .Object@Multiplier = multiplier
             .Object@Name = name
             .Object@UnderlyingFunds = underlyingFunds
+            .Object@UnderlyingVintages = underlyingVintages
+            .Object@UnderlyingStrategies = underlyingStrategies
             .Object@Stats = stats
             .Object@PeriodData = cull_Data(.Object, dataFreq)
+
+            if(loadVintages)
+              .Object@UnderlyingVintages = loadUnderlying(.Object, mode = "v")
+            if(loadStrategies)
+              .Object@UnderlyingStrategies = loadUnderlying(.Object, mode = "s")
+            if(loadFunds)
+              .Object@UnderlyingFunds = loadUnderlying(.Object, mode = "f")
 
             .Object
 
@@ -241,10 +265,15 @@ PrivateFund = function(name = NA_character_,
                         periodData = NULL,
                         holdings = NULL,
                         underlyingFunds = list(),
+                        underlyingVintages = list(),
+                        underlyingStrategies = list(),
                         freq = "d",
                         dataFreq = "m",
                         multiplier = 1e+06,
-                        active = NA_integer_)
+                        active = NA_integer_,
+                        loadVintages = F,
+                        loadStrategies = F,
+                        loadFunds = F)
 {
   new("PrivateFund",
       name = name,
@@ -259,10 +288,15 @@ PrivateFund = function(name = NA_character_,
       periodData = periodData,
       holdings = holdings,
       underlyingFunds = underlyingFunds,
+      underlyingStrategies = underlyingStrategies,
+      underlyingVintages = underlyingVintages,
       freq = freq,
       dataFreq = dataFreq,
       multiplier = multiplier,
-      active = as.integer(active)
+      active = as.integer(active),
+      loadVintages = loadVintages,
+      loadStrategies = loadStrategies,
+      loadFunds = loadFunds
       )
 }
 
@@ -290,19 +324,34 @@ PrivateFund = function(name = NA_character_,
 #             return(UnderlyingFunds)
 #           }
 # )
-#----------------------PrivateFund loadHoldings definition---------------------------------------------------------
-setGeneric(name = "loadHoldings", function(pef) standardGeneric("loadHoldings"))
-setMethod(f = "loadHoldings",
-        c("PrivateFund"),
+#----------------------PrivateFund loadUnderlying definition---------------------------------------------------------
+setGeneric(name = "loadUnderlying", function(pef, mode) standardGeneric("loadUnderlying"))
+setMethod(f = "loadUnderlying",
+        c("PrivateFund", "character"),
 
-        function(pef)
+        function(pef, mode)
         {
-          ids = pef@Holdings$Holding_ID
-          names(ids) = as.character(pef@Holdings$Holding_Name)
-
+          mode = tolower(strtrim(mode, 1))
           freq = tolower(pef@Freq)
-          UnderlyingFunds = lapply(ids, function(id)try(new("PrivateFund", ID = id, Freq = freq)))
-          return(UnderlyingFunds)
+          if(mode == "f"){
+            ids = pef@Holdings$Holding_ID
+            names(ids) = as.character(pef@Holdings$Holding_Name)
+            underlying = lapply(ids, function(id)try(PrivateFund(id = id, freq = freq)))
+
+          } else if (mode == "v"){
+            vintages = sort(unique(pef@Holdings$Vintage))
+            names(vintages) = vintages
+            underlying = lapply(vintages, function(v)try(PrivateFund(vintage = v, freq = freq)))
+          } else if (mode == "s"){
+            vintages = sort(unique(pef@Holdings$Vintage))
+            names(vintages) = vintages
+            strategies = sort(unique(as.character.factor(pef@Holdings$Strategy)))
+            names(strategies) = strategies
+            underlying = lapply(vintages,
+                                function(v) lapply(strategies,
+                                                   function(s) try(PrivateFund(vintage = v, strategy = s, freq = freq))))
+          }
+          return(underlying)
         }
 )
 #----------------------PrivateFund compareHoldings definition---------------------------------------------------------
