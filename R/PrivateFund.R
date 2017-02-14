@@ -15,10 +15,10 @@ setOldClass(c("xts"))
 setClass("PrivateFund",
          representation = list(Name = "character",
                                 Stats = "list",
-                                CashFlows = "xts",
-                                FMV = "xts",
-                                Commitments = "xts",
-                                PeriodData = "xts",
+                                CashFlows = "ANY",
+                                FMV = "ANY",
+                                Commitments = "ANY",
+                                PeriodData = "ANY",
                                 Holdings = "data.frame",
                                 UnderlyingVintages = "list",
                                 UnderlyingStrategies = "list",
@@ -63,8 +63,7 @@ setMethod("initialize",
                    loadFunds = F
                    ){
 
-            if(is.na(id))
-            {
+            if(is.na(id)){
               .Object@Vintage = vintage
               .Object@Strategy = strategy
               .Object@ID = id
@@ -78,9 +77,11 @@ setMethod("initialize",
               if(is.na(vintage)){
                 vintage = NULL
               }
+
               if(is.na(strategy)){
                 strategy = NULL
               }
+
               if(is.na(name)){
                 if(is.null(vintage) & is.null(strategy))
                   name = "Core"
@@ -91,15 +92,15 @@ setMethod("initialize",
                 else
                   name = paste0("Core - ", vintage, " ", strategy)
               }
+
               if(!is.null(active)){
                 if(active == 1)
                   name = paste0(name, " (Active Funds Only")
                 else
                   name = paste0(name, " (Inactive Funds Only")
               }
-            }
-            else
-            {
+
+            } else {
               .Object@ID = id
 
               vintage = NULL
@@ -119,6 +120,7 @@ setMethod("initialize",
 
 
             }
+
             if(is.null(holdings))
             {
               holdings = get_privateHoldings(id = id, strategy = strategy, vintage = vintage, active = active)
@@ -129,55 +131,96 @@ setMethod("initialize",
               commitments = get_privateCommitments(id = id, strategy = strategy, vintage = vintage, active = active, freq = freq, multiplier = multiplier)
             }
 
-            if(is.na(totalCommitment))
-            {
+            if(is.na(totalCommitment)){
               if(!is.null(commitments))
-                .Object@TotalCommitment = sum(commitments, na.rm = T)
+                totalCommitment = sum(commitments, na.rm = T)
               else
-                .Object@TotalCommitment = NA_real_
+                totalCommitment = NA_real_
             }
 
-            if(is.na(initialCommitment))
-            {
-              if(!is.null(holdings))
-                .Object@InitialCommitment = sum(holdings$Initial_Commitment_USD, na.rm = T)/multiplier
+            if(is.na(initialCommitment)){
+              if((!is.null(holdings)) & (nrow(holdings) > 0))
+                initialCommitment = sum(holdings$Initial_Commitment_USD, na.rm = T)/multiplier
               else
-                .Object@InitialCommitment = NA_real_
+                initialCommitment = NA_real_
             }
 
-            if(is.null(cashFlows))
-            {
+            if(is.null(cashFlows)){
               cashFlows = get_privateCashFlows(id = id, strategy = strategy, vintage = vintage, active = active, freq = freq, distIsPositive = T, multiplier = multiplier)
             }
 
-            if(is.null(fmv))
-            {
+            if(is.null(fmv)){
               fmv = get_privateValuations(id = id, strategy = strategy, vintage = vintage, active = active, freq = freq, multiplier = multiplier)
             }
-            if(is.null(publicBM))
+            if(is.null(fmv)){
+              fmv_end = 0
+            } else {
+              fmv_end = fmv[nrow(fmv)]
+            }
+
+            if(is.null(publicBM)){
               publicBM = loadIndices("SPTR")
+            }
 
-            pme = calc_PME(cashFlows[, "CashFlows_Net"], fmv = fmv, bm = publicBM)
-            commit = sum(commitments)
-            called_net = sum(cashFlows[, "Calls_Total_Net"])
-            called_gross = sum(cashFlows[, "Calls_Total_Gross"])
-            dists = sum(cashFlows[, "Distributions_Total"])
-            fmv_end = fmv[nrow(fmv)]
+            # pme = calc_PME(cashFlows[, "CashFlows_Net"], fmv = fmv, bm = publicBM)
+            # commit = sum(commitments)
+            # called_net = sum(cashFlows[, "Calls_Total_Net"])
+            # called_gross = sum(cashFlows[, "Calls_Total_Gross"])
+            # dists = sum(cashFlows[, "Distributions_Total"])
+            # fmv_end = fmv[nrow(fmv)]
+            #
+            # perf = try(calc_privatePerformance(cashFlows, fmv))
+            # pme_perf = try(calc_privatePerformance(cashFlows, pme))
+            #
+            # cf_stats = data.frame(Net = c(commit, called_net)
+            #                       )
+            #
+            #
+            # colnames(cf_stats)[2:3] = c("Called_w_Fees", "Called_wo_Fees")
+            #
+            # stats = list(Performance = try(calc_privatePerformance(cashFlows, fmv)),
+            #              PME_Performance = try(calc_privatePerformance(cashFlows, pme)),
+            #              CashFlows = try(cf_stats))
 
-            cf_stats = data.frame(Committed = commit,
-                                  Called_w_Fees = called_net,
-                                  Called_wo_Fees = called_gross,
-                                  Distributed = dists,
-                                  FMV = fmv_end)
+            if(!is.na(totalCommitment)){
+              if(is.null(cashFlows)){
+                called_net = 0
+                called_gross = 0
+                dists = 0
+                pme = NULL
+                pme_perf = NULL
+                perf = NULL
+              } else {
+                pme = calc_PME(cashFlows[, "CashFlows_Net"], fmv = fmv, bm = publicBM)
+                pme_perf = try(calc_privatePerformance(cashFlows, pme))
+                perf =  try(calc_privatePerformance(cashFlows, fmv))
+                called_net = sum(cashFlows[, "Calls_Total_Net"])
+                called_gross = sum(cashFlows[, "Calls_Total_Gross"])
+                dists = sum(cashFlows[, "Distributions_Total"])
+              }
 
+              cf_stats = data.frame(Committed = totalCommitment,
+                                    Called_w_Fees = called_net,
+                                    Called_wo_Fees = called_gross,
+                                    Distributed = dists,
+                                    FMV = fmv_end)
 
-            colnames(cf_stats)[2:3] = c("Called_w_Fees", "Called_wo_Fees")
+              colnames(cf_stats)[2:3] = c("Called_w_Fees", "Called_wo_Fees")
 
-            stats = list(Performance = try(calc_privatePerformance(cashFlows, fmv)),
-                         PME_Performance = try(calc_privatePerformance(cashFlows, pme)),
-                         CashFlows = try(cf_stats))
+              stats = list(Performance = perf,
+                           PME_Performance = pme_perf,
+                           CashFlows = cf_stats)
+
+            } else {
+              stats = list(Performance = NULL,
+                           PME_Performance = NULL,
+                           CashFlows = NULL)
+            }
+
 
             .Object@Commitments = commitments
+            .Object@TotalCommitment = totalCommitment
+            .Object@InitialCommitment = initialCommitment
             .Object@Holdings = holdings
             .Object@CashFlows = cashFlows
             .Object@FMV = fmv
@@ -188,14 +231,67 @@ setMethod("initialize",
             .Object@UnderlyingVintages = underlyingVintages
             .Object@UnderlyingStrategies = underlyingStrategies
             .Object@Stats = stats
+
             .Object@PeriodData = cull_Data(.Object, dataFreq)
 
-            if(loadVintages)
-              .Object@UnderlyingVintages = loadUnderlying(.Object, mode = "v")
-            if(loadStrategies)
+            if(loadVintages){
+              underlyingVintages = list(Aggregated = list(), Underlying = loadUnderlying(.Object, mode = "v"))
+              #underlyingVintages = list(Aggregated = list(), Underlying = loadUnderlying(core_re, mode = "v"))
+              cf_agg = matrix(unlist(lapply(underlyingVintages$Underlying,
+                                            function(v){if(class(v) == "PrivateFund"){v@Stats$CashFlows}else{rep(0, 5)}})), ncol = 5, byrow = T)
+              row.names(cf_agg) = names(underlyingVintages$Underlying)
+              colnames(cf_agg) = names(underlyingVintages$Underlying[[1]]@Stats$CashFlows)
+              if(any(as.numeric(row.names(cf_agg)[2:nrow(cf_agg)]) - as.numeric(row.names(cf_agg))[1:(nrow(cf_agg)-1)] > 1)){
+                allYears = as.character(as.numeric(row.names(cf_agg)[1]):as.numeric(row.names(cf_agg)[nrow(cf_agg)]))
+                missingYears = allYears[which(!(allYears %in% row.names(cf_agg)))]
+                for(y in as.numeric(missingYears)){
+                  yearInsert = matrix(rep(0, 5), ncol = 5)
+                  cf_agg_temp = cf_agg[which(as.numeric(row.names(cf_agg)) > y),]
+                  if(!is.matrix(cf_agg_temp)){
+                    cf_agg_temp = matrix(cf_agg_temp, ncol = 5)
+                    row.names(cf_agg_temp) = row.names(cf_agg)[nrow(cf_agg)]
+                  }
+                  cf_agg = rbind(cf_agg[which(as.numeric(row.names(cf_agg)) < y),], yearInsert)
+                  row.names(cf_agg)[nrow(cf_agg)] = y
+                  cf_agg = rbind(cf_agg, cf_agg_temp)
+                }
+              }
+              #names(timeBetween) = row.names(cf_agg)[1:(nrow(cf_agg)-1)]
+
+              # for(y in row.names(cf_agg)[which(timeBetween > 1)]){
+              #   numToFill = timeBetween[y] - 1
+              #   for(i in 1:numToFill){
+              #     nextFill = as.numeric(y) + i
+              #     if(which(row.names(cf_agg)==y)+i != nrow(cf_agg)){
+              #       cf_agg = rbind(cf_agg[row.names(cf_agg)[1:which(row.names(cf_agg)==y)],],
+              #                      rep(0, ncol(cf_agg)),
+              #                      cf_agg[row.names(cf_agg)[(which(row.names(cf_agg)==y)):nrow(cf_agg)],])
+              #       row.names(cf_agg)[which(row.names(cf_agg)==y)+1] = nextFill
+              #     } else {
+              #       tailName = row.names(cf_agg)[nrow(cf_agg)]
+              #       cf_agg = rbind(cf_agg[row.names(cf_agg)[1:which(row.names(cf_agg)==y)],],
+              #                      rep(0, ncol(cf_agg)),
+              #                      cf_agg[row.names(cf_agg)[(which(row.names(cf_agg)==y)+1):nrow(cf_agg)],])
+              #       row.names(cf_agg)[which(row.names(cf_agg)==y)+1] = nextFill
+              #       row.names(cf_agg)[nrow(cf_agg)] = tailName
+              #     }
+              #   }
+              # }
+              cf_agg_total = apply(cf_agg, 2, sum, na.rm = T)
+
+              cf_agg = rbind(cf_agg, TOTAL = cf_agg_total)
+
+              underlyingVintages$Aggregated = append(underlyingVintages$Aggregated, list(CashFlows = cf_agg))
+              .Object@UnderlyingVintages = underlyingVintages
+            }
+            if(loadStrategies){
+              underlyingStrategies = list(Aggregated = list(), Underlying = loadUnderlying(coreFund, mode = "s"))
               .Object@UnderlyingStrategies = loadUnderlying(.Object, mode = "s")
-            if(loadFunds)
+            }
+            if(loadFunds){
+              #underlyingFunds = loadUnderlying(.Object, mode = "f")
               .Object@UnderlyingFunds = loadUnderlying(.Object, mode = "f")
+            }
 
             .Object
 
@@ -340,16 +436,20 @@ setMethod(f = "loadUnderlying",
 
           } else if (mode == "v"){
             vintages = sort(unique(pef@Holdings$Vintage))
+            strategy = pef@Strategy
+            # if(is.na(strategy)){
+            #   strategy = NULL
+            # }
             names(vintages) = vintages
-            underlying = lapply(vintages, function(v)try(PrivateFund(vintage = v, freq = freq)))
+            underlying = lapply(vintages, function(v)try(PrivateFund(vintage = v, strategy = strategy, freq = freq)))
           } else if (mode == "s"){
             vintages = sort(unique(pef@Holdings$Vintage))
             names(vintages) = vintages
             strategies = sort(unique(as.character.factor(pef@Holdings$Strategy)))
             names(strategies) = strategies
-            underlying = lapply(vintages,
-                                function(v) lapply(strategies,
-                                                   function(s) try(PrivateFund(vintage = v, strategy = s, freq = freq))))
+            underlying = lapply(strategies,
+                                function(s) lapply(vintages,
+                                                   function(v) try(PrivateFund(vintage = v, strategy = s, freq = freq))))
           }
           return(underlying)
         }

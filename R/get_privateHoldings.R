@@ -20,10 +20,11 @@ get_privateHoldings = function(id=NULL, strategy=NULL, vintage=NULL, active = NU
       paramString = paste(paramString, paste0("@active = ", active), sep = ifelse(is.null(paramString), "", ", "))
   }
   procString = "usp_get_PrivateHoldings"
-  res = executeSP(procString, paramString, schema = "Core")
-  if(nrow(res)>0)
-    return(res)
-  else
-    return(NULL)
+  executeSP(procString, paramString, schema = "Core")
+  # if(nrow(res) > 0){
+  #   return(res)
+  # } else {
+  #   return(NULL)
+  # }
 }
 

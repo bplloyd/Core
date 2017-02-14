@@ -1,6 +1,6 @@
-calc_irr = function(cf,fmv, asOfDate = NULL, per = NULL)
+calc_irr = function(cf,fmv, asOfDate = NULL, per = NULL, useFirstValuation = F)
 {
-  library(tvm)
+  #library(tvm)
   if(is.null(fmv))
     fmv = xts::xts(rep(0, nrow(cf)), order.by = zoo::index(cf))
 
@@ -19,13 +19,15 @@ calc_irr = function(cf,fmv, asOfDate = NULL, per = NULL)
     perf_start = end(data) %m-% per
     data = data[zoo::index(data) >= perf_start]
   }
-  data[nrow(data), 1] = zoo::na.fill(data[nrow(data), 1],0) + data[nrow(data), 2]
-  data[1, 1] = zoo::na.fill(data[1, 1],0) - data[1, 2]
+  data[nrow(data), 1] = zoo::na.fill(data[nrow(data), 1],0) + zoo::na.fill(data[nrow(data), 2],0)
+  if(useFirstValuation){
+    data[1, 1] = zoo::na.fill(data[1, 1],0) - zoo::na.fill(data[1, 2], 0)
+  }
   cf_unrealized = na.omit(data[, 1])
 
   result = data.frame(IRR = c(tvm::xirr(cf = cf_unrealized,
                                    d = zoo::index(cf_unrealized),
-                                   interval = c(-0.999999, 1e+01))),
+                                   interval = c(-0.999999, .01))),
                       row.names = asOfDate)
 
   return(result)

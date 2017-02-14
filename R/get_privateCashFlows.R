@@ -2,16 +2,14 @@
 #' @include abbToStrategy.R
 
 
-get_privateCashFlows = function(id=NULL, strategy=NULL, vintage=NULL, active = NULL, freq = 'm', distIsPositive = T, multiplier = 1)
-{
+get_privateCashFlows = function(id=NULL, strategy=NULL, vintage=NULL, active = NULL, freq = 'm', distIsPositive = T, multiplier = 1){
   if((!is.null(strategy)) && (nchar(strategy) <= 3)){
     strategy = abbToStrategy(strategy)
   }
 
-  if(!is.null(id))
+  if(!is.null(id)){
     paramString = paste0("@holding_ID = ", id)
-  else
-  {
+  } else {
     paramString = NULL
     if(!is.null(strategy))
       paramString = paste0("@strategy = '", strategy, "'")
@@ -28,8 +26,7 @@ get_privateCashFlows = function(id=NULL, strategy=NULL, vintage=NULL, active = N
 
   cf = dplyr::tbl_df(cf)
 
-  if(nrow(cf)>0)
-  {
+  if(nrow(cf)>0){
 
     cf =  dplyr::summarise(dplyr::group_by(cf, Date, Transaction_Description), Amount = sum(Amount))
     cf = data.table::dcast(cf, Date ~  Transaction_Description, fun.aggregate = sum, value.var = "Amount")
@@ -69,13 +66,15 @@ get_privateCashFlows = function(id=NULL, strategy=NULL, vintage=NULL, active = N
     if(distIsPositive)
       cf[, c("CashFlows_Net", "CashFlows_Gross")] = -1*cf[, c("CashFlows_Net", "CashFlows_Gross")]
 
-    if(freq != "d")
-    {
+    if(freq != "d"){
       zoo::index(cf) = lubridate::ceiling_date(zoo::index(cf), "months") - 1
       epts = xts::endpoints(cf, "months")
+      num_months = switch(freq, 'm' = 1, 'q' = 3, 'y' = 12)
       if(length(epts)>2){
         cf = xts::xts(apply(cf, 2, function(c)xts::period.sum(c, epts)), order.by = zoo::index(cf)[epts])
-        fillDates = lubridate::ceiling_date(start(cf) %m+% months(0:(lubridate::interval(start(cf), end(cf))/months(1))), "months") - 1
+        #fillDates = lubridate::ceiling_date(start(cf) %m+% months(0:(lubridate::interval(start(cf), end(cf))/months(1))), "months") - 1
+
+        fillDates = lubridate::ceiling_date(lubridate::add_with_rollback(e1 = start(cf), months(0:(lubridate::interval(start(cf), end(cf))/months(1)))), unit = "m")-1
         temp_cf = xts::xts(replicate(ncol(cf), rep(0, length(fillDates))), order.by = fillDates)
         names(temp_cf) = names(cf)
         temp_cf[zoo::index(cf),] = cf
@@ -103,8 +102,8 @@ get_privateCashFlows = function(id=NULL, strategy=NULL, vintage=NULL, active = N
 
     }
     return(cf/multiplier)
-  }
-  else
+  } else {
     return(NULL)
+  }
 
 }

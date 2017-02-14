@@ -37,3 +37,4 @@ Collate:
     'RcppExports.R'
     'hello.R'
     'loadIndices.R'
+RoxygenNote: 6.0.0

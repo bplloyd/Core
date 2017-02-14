@@ -49,9 +49,9 @@ get_privateCommitments = function(id=NULL, strategy=NULL, vintage=NULL, active =
       }
     }
     return(commits/multiplier)
-  }
-  else
+  } else {
     return(NULL)
+  }
 
 }
 

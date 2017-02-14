@@ -16,7 +16,7 @@ loadIndices = function(idxNames = "SPTR"){
   idxFilter = paste0(idxFilter, ")")
   cn = RODBC::odbcDriverConnect("driver={SQL Server}; server=HAT-SQL-01; database=Hatteras_Sandbox_Tools; trusted_connection=true")
   sql = paste0("SELECT CAST(v.DateReported AS date) 'DateReported', v.Ticker, v.PX_LAST FROM v_Index_Px_Daily AS v WHERE v.Ticker IN ", idxFilter)
-  indices = data.table::dcast(data.table::data.table(RODBC::sqlQuery(cn, sql)), formula = DateReported ~ Ticker, fun.aggregate = mean)
+  indices = data.table::dcast(data.table::data.table(RODBC::sqlQuery(cn, sql)), formula = DateReported ~ Ticker, fun.aggregate = mean, value.var = "PX_LAST")
   indices$DateReported = as.Date.factor(indices$DateReported)
   RODBC::odbcClose(cn)
   return(data.table::as.xts.data.table(indices)[, idxNames])
