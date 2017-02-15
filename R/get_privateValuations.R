@@ -1,27 +1,10 @@
 #' @include executeSP.R
 #' @include abbToStrategy.R
+#' @include make_paramString.R
 
-
-get_privateValuations = function(id=NULL, strategy=NULL, vintage=NULL, active = NULL, freq = 'm', multiplier = 1)
+get_privateValuations = function(id=NA, strategy=NA, vintage=NA, active = NA, freq = 'm', multiplier = 1)
 {
-  #require(lubridate)
-
-  if((!is.null(strategy)) && (nchar(strategy) <= 3)){
-    strategy = abbToStrategy(strategy)
-  }
-
-  if(!is.null(id))
-    paramString = paste0("@holding_ID = ", id)
-  else
-  {
-    paramString = NULL
-    if(!is.null(strategy))
-      paramString = paste0("@strategy = '", strategy, "'")
-    if(!is.null(vintage))
-      paramString = paste(paramString, paste0("@vintage = ", vintage), sep = ifelse(is.null(paramString), "", ", "))
-    if(!is.null(active))
-      paramString = paste(paramString, paste0("@active = ", active), sep = ifelse(is.null(paramString), "", ", "))
-  }
+  paramString = make_paramString(id, strategy, vintage, active)
   procString = "usp_get_Valuations"
   val = executeSP(procString, paramString, schema = "Core")
   val$Month = as.Date.factor(val$Month)

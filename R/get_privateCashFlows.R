@@ -1,28 +1,13 @@
 #' @include executeSP.R
 #' @include abbToStrategy.R
+#' @include make_paramString.R
 
-
-get_privateCashFlows = function(id=NULL, strategy=NULL, vintage=NULL, active = NULL, freq = 'm', distIsPositive = T, multiplier = 1){
-  if((!is.null(strategy)) && (nchar(strategy) <= 3)){
-    strategy = abbToStrategy(strategy)
-  }
-
-  if(!is.null(id)){
-    paramString = paste0("@holding_ID = ", id)
-  } else {
-    paramString = NULL
-    if(!is.null(strategy))
-      paramString = paste0("@strategy = '", strategy, "'")
-    if(!is.null(vintage))
-      paramString = paste(paramString, paste0("@vintage = ", vintage), sep = ifelse(is.null(paramString), "", ", "))
-    if(!is.null(active))
-      paramString = paste(paramString, paste0("@active = ", active), sep = ifelse(is.null(paramString), "", ", "))
-  }
+get_privateCashFlows = function(id=NA, strategy=NA, vintage=NA, active = NA, freq = 'm', distIsPositive = T, multiplier = 1){
+  paramString = make_paramString(id, strategy, vintage, active)
   procString = "usp_get_CashFlows"
   cf = executeSP(procString, paramString, schema = "Core")
   cf$Effective_Date = as.Date.factor(cf$Effective_Date)
   names(cf)[names(cf) == "Effective_Date"] = "Date"
-  #cf[, 2:ncol(cf)] = -1*cf[, 2:ncol(cf)]
 
   cf = dplyr::tbl_df(cf)
 
@@ -30,10 +15,6 @@ get_privateCashFlows = function(id=NULL, strategy=NULL, vintage=NULL, active = N
 
     cf =  dplyr::summarise(dplyr::group_by(cf, Date, Transaction_Description), Amount = sum(Amount))
     cf = data.table::dcast(cf, Date ~  Transaction_Description, fun.aggregate = sum, value.var = "Amount")
-
-    #cf = mutate(cf, CashFlows_Net = CapitalCall_Investment + CapitalCall_FeesAndExpenses - Distribution_GainLoss - Distribution_ReturnOfCapital,
-    #CashFlows_Gross = CapitalCall_Investment - Distribution_GainLoss - Distribution_ReturnOfCapital)
-
     cf_names = names(cf)[2:ncol(cf)]
     cf = tidyquant::as_xts_(cf, date_col = "Date")
     names(cf) = cf_names
@@ -83,7 +64,6 @@ get_privateCashFlows = function(id=NULL, strategy=NULL, vintage=NULL, active = N
         temp_cf = cf
       }
 
-
       if(freq != "m"){
         per = switch(freq,
                      "q" = "quarters",
@@ -98,8 +78,6 @@ get_privateCashFlows = function(id=NULL, strategy=NULL, vintage=NULL, active = N
       else{
         cf = temp_cf
       }
-
-
     }
     return(cf/multiplier)
   } else {

@@ -19,12 +19,16 @@ Imports: Rcpp (>= 0.12.9),
     data.table,
     RODBC,
     zoo,
-    magrittr
+    magrittr,
+    wrapr
 LinkingTo: Rcpp
 Collate: 
+    'aggregatePrivates.R'
+    'captureErrors.R'
     'calc_PME.R'
     'cull_Data.R'
     'calc_privatePerformance.R'
+    'make_paramString.R'
     'abbToStrategy.R'
     'executeSP.R'
     'get_privateValuations.R'
@@ -35,6 +39,7 @@ Collate:
     'calc_drawdownRate.R'
     'PrivateFund.R'
     'RcppExports.R'
+    'cull_ggplot_data.R'
     'hello.R'
     'loadIndices.R'
 RoxygenNote: 6.0.0

@@ -8,6 +8,8 @@
 #' @include calc_privatePerformance.R
 #' @include cull_Data.R
 #' @include calc_PME.R
+#' @include captureErrors.R
+#' @include aggregatePrivates.R
 
 setOldClass(c("xts"))
 
@@ -30,7 +32,8 @@ setClass("PrivateFund",
                                 Active = "integer",
                                 ID = "numeric",
                                 Freq = "character",
-                                Multiplier = "numeric"
+                                Multiplier = "numeric",
+                                ErrorList = "list"
                                 ))
 
 
@@ -61,7 +64,16 @@ setMethod("initialize",
                    loadVintages = F,
                    loadStrategies = F,
                    loadFunds = F
-                   ){
+          ){
+
+            i = 1
+
+            errorListName = paste0("errorList_", i)
+            while(exists(errorListName, envir = globalenv())){
+              i = i + 1
+              errorListName = paste0("errorList_", i)
+            }
+            assign(x = errorListName, value = list(), envir = globalenv())
 
             if(is.na(id)){
               .Object@Vintage = vintage
@@ -69,31 +81,19 @@ setMethod("initialize",
               .Object@ID = id
               .Object@Active = active
 
-              id = NULL
-              if(is.na(active)){
-                active = NULL
-              }
-
-              if(is.na(vintage)){
-                vintage = NULL
-              }
-
-              if(is.na(strategy)){
-                strategy = NULL
-              }
 
               if(is.na(name)){
-                if(is.null(vintage) & is.null(strategy))
+                if(is.na(vintage) & is.na(strategy))
                   name = "Core"
-                else if(!is.null(vintage) & is.null(strategy))
+                else if(!is.na(vintage) & is.na(strategy))
                   name = paste0("Core - ", vintage, " Vintage")
-                else if(is.null(vintage) & !is.null(strategy))
+                else if(is.na(vintage) & !is.na(strategy))
                   name = paste0("Core - ", strategy)
                 else
                   name = paste0("Core - ", vintage, " ", strategy)
               }
 
-              if(!is.null(active)){
+              if(!is.na(active)){
                 if(active == 1)
                   name = paste0(name, " (Active Funds Only")
                 else
@@ -103,10 +103,15 @@ setMethod("initialize",
             } else {
               .Object@ID = id
 
-              vintage = NULL
-              strategy = NULL
-              active = NULL
-              holdings = get_privateHoldings(id = id, strategy = strategy, vintage = vintage, active = active)
+
+              #holdings = get_privateHoldings(id = id, strategy = strategy, vintage = vintage, active = active)
+              holdings = captureErrors(func = get_privateHoldings,
+                                       captureList = errorListName,
+                                       default = NULL,
+                                       id = id,
+                                       strategy = strategy,
+                                       vintage = vintage,
+                                       active = active)
 
 
               .Object@Vintage = as.integer(holdings$Vintage)
@@ -117,18 +122,34 @@ setMethod("initialize",
 
               if(is.na(name))
                 name = as.character(holdings$Holding_Name[1])
-
-
             }
 
             if(is.null(holdings))
             {
-              holdings = get_privateHoldings(id = id, strategy = strategy, vintage = vintage, active = active)
+              #holdings = get_privateHoldings(id = id, strategy = strategy, vintage = vintage, active = active)
+              holdings = captureErrors(func = get_privateHoldings,
+                                       captureList = errorListName,
+                                       default = NULL,
+                                       id = id,
+                                       strategy = strategy,
+                                       vintage = vintage,
+                                       active = active)
+
             }
 
             if(is.null(commitments))
             {
-              commitments = get_privateCommitments(id = id, strategy = strategy, vintage = vintage, active = active, freq = freq, multiplier = multiplier)
+              #commitments = get_privateCommitments(id = id, strategy = strategy, vintage = vintage, active = active, freq = freq, multiplier = multiplier)
+              commitments = captureErrors(func = get_privateCommitments,
+                                          captureList = errorListName,
+                                          default = NULL,
+                                          id = id,
+                                          strategy = strategy,
+                                          vintage = vintage,
+                                          active = active,
+                                          freq = freq,
+                                          multiplier = multiplier)
+
             }
 
             if(is.na(totalCommitment)){
@@ -146,11 +167,33 @@ setMethod("initialize",
             }
 
             if(is.null(cashFlows)){
-              cashFlows = get_privateCashFlows(id = id, strategy = strategy, vintage = vintage, active = active, freq = freq, distIsPositive = T, multiplier = multiplier)
+              #cashFlows = get_privateCashFlows(id = id, strategy = strategy, vintage = vintage, active = active, freq = freq, distIsPositive = T, multiplier = multiplier)
+              cashFlows = captureErrors(func = get_privateCashFlows,
+                                        captureList = errorListName,
+                                        default = NULL,
+                                        id = id,
+                                        strategy = strategy,
+                                        vintage = vintage,
+                                        active = active,
+                                        freq = freq,
+                                        multiplier = multiplier,
+                                        distIsPositive = T)
+
             }
 
             if(is.null(fmv)){
-              fmv = get_privateValuations(id = id, strategy = strategy, vintage = vintage, active = active, freq = freq, multiplier = multiplier)
+              #fmv = get_privateValuations(id = id, strategy = strategy, vintage = vintage, active = active, freq = freq, multiplier = multiplier)
+              fmv = captureErrors(func = get_privateValuations,
+                                  captureList = errorListName,
+                                  default = NULL,
+                                  id = id,
+                                  strategy = strategy,
+                                  vintage = vintage,
+                                  active = active,
+                                  freq = freq,
+                                  multiplier = multiplier)
+
+
             }
             if(is.null(fmv)){
               fmv_end = 0
@@ -191,11 +234,41 @@ setMethod("initialize",
                 pme_perf = NULL
                 perf = NULL
               } else {
-                pme = calc_PME(cashFlows[, "CashFlows_Net"], fmv = fmv, bm = publicBM)
-                pme_perf = try(calc_privatePerformance(cashFlows, pme))
-                perf =  try(calc_privatePerformance(cashFlows, fmv))
+                #pme = calc_PME(cashFlows[, "CashFlows_Net"], fmv = fmv, bm = publicBM)
+
+
+                pme =  captureErrors(func = calc_PME,
+                                     captureList = errorListName,
+                                     default = NULL,
+                                     cf = cashFlows[, "CashFlows_Net"],
+                                     fmv = fmv,
+                                     bm = publicBM)
+
+
+                #pme_perf = try(calc_privatePerformance(cashFlows, pme))
+                pme_perf = captureErrors(func = calc_privatePerformance,
+                                         captureList = errorListName,
+                                         default = NULL,
+                                         cf =  cashFlows,
+                                         fmv = pme)
+
+
+
+                #perf =  try(calc_privatePerformance(cashFlows, fmv))
+                perf =  captureErrors(func = calc_privatePerformance,
+                                      captureList = errorListName,
+                                      default = NULL,
+                                      cf =  cashFlows,
+                                      fmv = fmv)
+
+
+
                 called_net = sum(cashFlows[, "Calls_Total_Net"])
+
+
                 called_gross = sum(cashFlows[, "Calls_Total_Gross"])
+
+
                 dists = sum(cashFlows[, "Distributions_Total"])
               }
 
@@ -232,68 +305,30 @@ setMethod("initialize",
             .Object@UnderlyingStrategies = underlyingStrategies
             .Object@Stats = stats
 
-            .Object@PeriodData = cull_Data(.Object, dataFreq)
+            #.Object@PeriodData = cull_Data(.Object, dataFreq)
+            .Object@PeriodData = captureErrors(func = cull_Data,
+                                               captureList = errorListName,
+                                               default = NULL,
+                                               pef =  .Object,
+                                               freq =  dataFreq)
+
 
             if(loadVintages){
-              underlyingVintages = list(Aggregated = list(), Underlying = loadUnderlying(.Object, mode = "v"))
-              #underlyingVintages = list(Aggregated = list(), Underlying = loadUnderlying(core_re, mode = "v"))
-              cf_agg = matrix(unlist(lapply(underlyingVintages$Underlying,
-                                            function(v){if(class(v) == "PrivateFund"){v@Stats$CashFlows}else{rep(0, 5)}})), ncol = 5, byrow = T)
-              row.names(cf_agg) = names(underlyingVintages$Underlying)
-              colnames(cf_agg) = names(underlyingVintages$Underlying[[1]]@Stats$CashFlows)
-              if(any(as.numeric(row.names(cf_agg)[2:nrow(cf_agg)]) - as.numeric(row.names(cf_agg))[1:(nrow(cf_agg)-1)] > 1)){
-                allYears = as.character(as.numeric(row.names(cf_agg)[1]):as.numeric(row.names(cf_agg)[nrow(cf_agg)]))
-                missingYears = allYears[which(!(allYears %in% row.names(cf_agg)))]
-                for(y in as.numeric(missingYears)){
-                  yearInsert = matrix(rep(0, 5), ncol = 5)
-                  cf_agg_temp = cf_agg[which(as.numeric(row.names(cf_agg)) > y),]
-                  if(!is.matrix(cf_agg_temp)){
-                    cf_agg_temp = matrix(cf_agg_temp, ncol = 5)
-                    row.names(cf_agg_temp) = row.names(cf_agg)[nrow(cf_agg)]
-                  }
-                  cf_agg = rbind(cf_agg[which(as.numeric(row.names(cf_agg)) < y),], yearInsert)
-                  row.names(cf_agg)[nrow(cf_agg)] = y
-                  cf_agg = rbind(cf_agg, cf_agg_temp)
-                }
-              }
-              #names(timeBetween) = row.names(cf_agg)[1:(nrow(cf_agg)-1)]
-
-              # for(y in row.names(cf_agg)[which(timeBetween > 1)]){
-              #   numToFill = timeBetween[y] - 1
-              #   for(i in 1:numToFill){
-              #     nextFill = as.numeric(y) + i
-              #     if(which(row.names(cf_agg)==y)+i != nrow(cf_agg)){
-              #       cf_agg = rbind(cf_agg[row.names(cf_agg)[1:which(row.names(cf_agg)==y)],],
-              #                      rep(0, ncol(cf_agg)),
-              #                      cf_agg[row.names(cf_agg)[(which(row.names(cf_agg)==y)):nrow(cf_agg)],])
-              #       row.names(cf_agg)[which(row.names(cf_agg)==y)+1] = nextFill
-              #     } else {
-              #       tailName = row.names(cf_agg)[nrow(cf_agg)]
-              #       cf_agg = rbind(cf_agg[row.names(cf_agg)[1:which(row.names(cf_agg)==y)],],
-              #                      rep(0, ncol(cf_agg)),
-              #                      cf_agg[row.names(cf_agg)[(which(row.names(cf_agg)==y)+1):nrow(cf_agg)],])
-              #       row.names(cf_agg)[which(row.names(cf_agg)==y)+1] = nextFill
-              #       row.names(cf_agg)[nrow(cf_agg)] = tailName
-              #     }
-              #   }
-              # }
-              cf_agg_total = apply(cf_agg, 2, sum, na.rm = T)
-
-              cf_agg = rbind(cf_agg, TOTAL = cf_agg_total)
-
-              underlyingVintages$Aggregated = append(underlyingVintages$Aggregated, list(CashFlows = cf_agg))
-              .Object@UnderlyingVintages = underlyingVintages
+              .Object@UnderlyingVintages = loadUnderlying(.Object, "v", errorListName)
             }
             if(loadStrategies){
-              underlyingStrategies = list(Aggregated = list(), Underlying = loadUnderlying(coreFund, mode = "s"))
-              .Object@UnderlyingStrategies = loadUnderlying(.Object, mode = "s")
+              # underlyingStrategies = list(Aggregated = list(), Underlying = loadUnderlying(coreFund, mode = "s"))
+              .Object@UnderlyingStrategies = loadUnderlying(.Object, mode = "s", errorListName)
             }
             if(loadFunds){
               #underlyingFunds = loadUnderlying(.Object, mode = "f")
-              .Object@UnderlyingFunds = loadUnderlying(.Object, mode = "f")
+              .Object@UnderlyingFunds = loadUnderlying(.Object, mode = "f", errorListName)
             }
 
-            .Object
+            .Object@ErrorList = globalenv()[[errorListName]]
+             rm(list = c(errorListName), envir = globalenv())
+
+             .Object
 
           })
 #----------------------PrivateFund get_Data definition---------------------------------------------------------
@@ -421,36 +456,159 @@ PrivateFund = function(name = NA_character_,
 #           }
 # )
 #----------------------PrivateFund loadUnderlying definition---------------------------------------------------------
-setGeneric(name = "loadUnderlying", function(pef, mode) standardGeneric("loadUnderlying"))
+setGeneric(name = "loadUnderlying", function(pef, mode, errorListName) standardGeneric("loadUnderlying"))
 setMethod(f = "loadUnderlying",
-        c("PrivateFund", "character"),
-
-        function(pef, mode)
-        {
+        c("PrivateFund", "character", "character"),
+        function(pef, mode, errorListName){
           mode = tolower(strtrim(mode, 1))
           freq = tolower(pef@Freq)
           if(mode == "f"){
             ids = pef@Holdings$Holding_ID
             names(ids) = as.character(pef@Holdings$Holding_Name)
-            underlying = lapply(ids, function(id)try(PrivateFund(id = id, freq = freq)))
+            #underlying = lapply(ids, function(id)try(PrivateFund(id = id, freq = freq)))
+            underlying = lapply(ids,
+                                function(id) captureErrors(func = PrivateFund,
+                                                                captureList = errorListName,
+                                                                default = NULL,
+                                                                id  =  id,
+                                                                freq = freq))
+
 
           } else if (mode == "v"){
             vintages = sort(unique(pef@Holdings$Vintage))
             strategy = pef@Strategy
-            # if(is.na(strategy)){
-            #   strategy = NULL
-            # }
             names(vintages) = vintages
-            underlying = lapply(vintages, function(v)try(PrivateFund(vintage = v, strategy = strategy, freq = freq)))
+
+            #underlying = lapply(vintages, function(v)try(PrivateFund(vintage = v, strategy = strategy, freq = freq)))
+            underlying = lapply(vintages,
+                                function(v) captureErrors(func = PrivateFund,
+                                                                captureList = errorListName,
+                                                                default = NULL,
+                                                                strategy = strategy,
+                                                                vintage = v,
+                                                                freq = freq))
+
+            # cf_agg = matrix(unlist(lapply(underlying,
+            #                               function(v){if(class(v) == "PrivateFund"){v@Stats$CashFlows}else{rep(0, 5)}})), ncol = 5, byrow = T)
+            # row.names(cf_agg) = names(underlying)
+            # colnames(cf_agg) = names(underlying[[1]]@Stats$CashFlows)
+            # if(any(as.numeric(row.names(cf_agg)[2:nrow(cf_agg)]) - as.numeric(row.names(cf_agg))[1:(nrow(cf_agg)-1)] > 1)){
+            #   allYears = as.character(as.numeric(row.names(cf_agg)[1]):as.numeric(row.names(cf_agg)[nrow(cf_agg)]))
+            #   missingYears = allYears[which(!(allYears %in% row.names(cf_agg)))]
+            #   for(y in as.numeric(missingYears)){
+            #     yearInsert = matrix(rep(0, 5), ncol = 5)
+            #     cf_agg_temp = cf_agg[which(as.numeric(row.names(cf_agg)) > y),]
+            #     if(!is.matrix(cf_agg_temp)){
+            #       cf_agg_temp = matrix(cf_agg_temp, ncol = 5)
+            #       row.names(cf_agg_temp) = row.names(cf_agg)[nrow(cf_agg)]
+            #     }
+            #     cf_agg = rbind(cf_agg[which(as.numeric(row.names(cf_agg)) < y),], yearInsert)
+            #     row.names(cf_agg)[nrow(cf_agg)] = y
+            #     cf_agg = rbind(cf_agg, cf_agg_temp)
+            #   }
+            # }
+            #
+            # cf_agg_total = apply(cf_agg, 2, sum, na.rm = T)
+            #
+            # cf_agg = rbind(cf_agg, TOTAL = cf_agg_total)
+            cf_agg = captureErrors(func = aggregatePrivates,
+                                   captureList = errorListName,
+                                   default = NULL,
+                                   underlying = underlying,
+                                   stats = "CashFlows")
+            perf_net_agg = captureErrors(func = aggregatePrivates,
+                                     captureList = errorListName,
+                                     default = NULL,
+                                     underlying = underlying,
+                                     stats = "Performance",
+                                     net=T)
+            perf_gross_agg = captureErrors(func = aggregatePrivates,
+                                         captureList = errorListName,
+                                         default = NULL,
+                                         underlying = underlying,
+                                         stats = "Performance",
+                                         net=F)
+
+            pme_net_agg = captureErrors(func = aggregatePrivates,
+                                         captureList = errorListName,
+                                         default = NULL,
+                                         underlying = underlying,
+                                         stats = "PME_Performance",
+                                         net=T)
+            pme_gross_agg = captureErrors(func = aggregatePrivates,
+                                           captureList = errorListName,
+                                           default = NULL,
+                                           underlying = underlying,
+                                           stats = "PME_Performance",
+                                           net=F)
+
+            underlying = list(Underlying = underlying,
+                              Aggregated = list(CashFlows = cf_agg,
+                                                Performance = list(Net = perf_net_agg,
+                                                                   Gross = perf_gross_agg),
+                                                PME = list(Net = pme_net_agg,
+                                                           Gross = pme_gross_agg)))
           } else if (mode == "s"){
             vintages = sort(unique(pef@Holdings$Vintage))
             names(vintages) = vintages
             strategies = sort(unique(as.character.factor(pef@Holdings$Strategy)))
             names(strategies) = strategies
+            # underlying = lapply(strategies,
+            #                     function(s) lapply(vintages,
+            #                                        function(v) try(PrivateFund(vintage = v, strategy = s, freq = freq))))
             underlying = lapply(strategies,
                                 function(s) lapply(vintages,
-                                                   function(v) try(PrivateFund(vintage = v, strategy = s, freq = freq))))
+                                                   function(v) captureErrors(func = PrivateFund,
+                                                                    captureList = errorListName,
+                                                                    default = NULL,
+                                                                    strategy = s,
+                                                                    vintage = v,
+                                                                    freq = freq)))
+
+            cf_agg = lapply(strategies,
+                            function(s) captureErrors(func = aggregatePrivates,
+                                                      captureList = errorListName,
+                                                      default = NULL,
+                                                      underlying = underlying[[s]],
+                                                      stats = "CashFlows"))
+            perf_net_agg = lapply(strategies,
+                            function(s) captureErrors(func = aggregatePrivates,
+                                                      captureList = errorListName,
+                                                      default = NULL,
+                                                      underlying = underlying[[s]],
+                                                      stats = "Performance",
+                                                      net = T))
+            perf_gross_agg = lapply(strategies,
+                                    function(s) captureErrors(func = aggregatePrivates,
+                                                              captureList = errorListName,
+                                                              default = NULL,
+                                                              underlying = underlying[[s]],
+                                                              stats = "Performance",
+                                                              net = F))
+            pme_net_agg = lapply(strategies,
+                                  function(s) captureErrors(func = aggregatePrivates,
+                                                            captureList = errorListName,
+                                                            default = NULL,
+                                                            underlying = underlying[[s]],
+                                                            stats = "PME_Performance",
+                                                            net = T))
+            pme_gross_agg = lapply(strategies,
+                                    function(s) captureErrors(func = aggregatePrivates,
+                                                              captureList = errorListName,
+                                                              default = NULL,
+                                                              underlying = underlying[[s]],
+                                                              stats = "PME_Performance",
+                                                              net = F))
+
+            underlying = list(Underlying = underlying,
+                              Aggregated = list(CashFlows = cf_agg,
+                                                Performance = list(Net = perf_net_agg,
+                                                                   Gross = perf_gross_agg),
+                                                PME = list(Net = pme_net_agg,
+                                                           Gross = pme_gross_agg)))
           }
+
+
           return(underlying)
         }
 )
