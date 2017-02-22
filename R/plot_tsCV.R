@@ -1,4 +1,4 @@
-plot_tsCV_comparison = function(result_list, label="MAE", main = "Forecast Validation Comparison", ...){
+plot_tsCV_comparison = function(result_list, label="MAE", main = "Forecast Validation Comparison", legend_spot = "bottomright", ...){
   err_stats = lapply(result_list, function(r) colMeans(abs(r[,,"error"]), na.rm = T))
 
   h=length(err_stats[[1]])
@@ -11,7 +11,7 @@ plot_tsCV_comparison = function(result_list, label="MAE", main = "Forecast Valid
       lines(1:h, err_stats[[i]], col = i, lwd = 2)
     }
   }
-  legend("topleft",legend=names(err_stats),col=1:length(err_stats),lwd = 2)
+  legend(legend_spot,legend=names(err_stats),col=1:length(err_stats),lwd = 2)
 }
 
 plot_tsCV_rolling_error = function(result_array, err_func = function(r)mean(abs(r), na.rm = T), label = "MAE", main = "MAE Over Time", ...) {
