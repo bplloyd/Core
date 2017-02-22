@@ -20,7 +20,10 @@ Imports: Rcpp (>= 0.12.9),
     RODBC,
     zoo,
     magrittr,
-    wrapr
+    wrapr,
+    ggplot2,
+    forecast,
+    parallel
 LinkingTo: Rcpp
 Collate: 
     'aggregatePrivates.R'
@@ -39,7 +42,15 @@ Collate:
     'calc_drawdownRate.R'
     'PrivateFund.R'
     'RcppExports.R'
+    'as_ts.R'
+    'compareForecastAccuracy.R'
     'cull_ggplot_data.R'
+    'ggCashFlows.R'
     'hello.R'
     'loadIndices.R'
+    'plot_tsCV.R'
+    'rollingForecasts.R'
+    'rollingForecasts2.R'
+    'rollingForecasts3.R'
+    'rollingForecasts_exp.R'
 RoxygenNote: 6.0.0
