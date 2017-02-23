@@ -6,7 +6,7 @@
 #' @include get_privateCashFlows.R
 #' @include get_privateValuations.R
 #' @include calc_privatePerformance.R
-#' @include cull_Data.R
+#' @include cull_data.R
 #' @include calc_PME.R
 #' @include captureErrors.R
 #' @include aggregatePrivates.R
@@ -306,7 +306,7 @@ setMethod("initialize",
             .Object@Stats = stats
 
             #.Object@PeriodData = cull_Data(.Object, dataFreq)
-            .Object@PeriodData = captureErrors(func = cull_Data,
+            .Object@PeriodData = captureErrors(func = cull_data,
                                                captureList = errorListName,
                                                default = NULL,
                                                pef =  .Object,
@@ -331,57 +331,49 @@ setMethod("initialize",
              .Object
 
           })
-#----------------------PrivateFund get_Data definition---------------------------------------------------------
-# setGeneric(name = "get_Data", function(pef, freq) standardGeneric("get_Data"))
-#
-# setMethod(f = "get_Data",
-#           c("PrivateFund", "character"),
-#           function(pef, freq)
-#           {
-#             data = cbind(pef@Commitments, pef@CashFlows, pef@FMV)
-#
-#             freq = tolower(freq)
-#
-#             if(freq != "d")
-#             {
-#               per = switch(freq, 'm' = "months", 'q' = "quarters", 'y' = "years")
-#               num_months = switch(freq, 'm' = 1, 'q' = 3, 'y' = 12)
-#               zoo::index(data) = lubridate::ceiling_date(zoo::index(data), per) - 1
-#               epts = xts::endpoints(data, per)
-#
-#               if(length(epts)>2)
-#               {
-#                 cf = xts::xts(apply(zoo::na.fill(data[,names(pef@CashFlows)],0), 2, function(c)xts::period.sum(c, epts)), order.by = zoo::index(data)[epts])
-#                 commits = xts::period.sum(zoo::na.fill(data[,names(pef@Commitments)],0), epts)
-#                 names(commits) = names(pef@Commitments)
-#                 fmv = data[epts, names(pef@FMV)]
-#                 data = cbind(commits, cf, fmv)
-#
-#                 fillDates = lubridate::ceiling_date(start(data) %m+% lubridate::months(0:(lubridate::interval(start(data), end(data))/lubridate::months(num_months))), per) - 1
-#
-#                 if(length(fillDates) != nrow(data))
-#                 {
-#                   temp_data = xts::xts(replicate(ncol(data), rep(NA_real_, length(fillDates))), order.by = fillDates)
-#                   names(temp_data) = names(data)
-#                   temp_data[zoo::index(data),] = data
-#
-#
-#                   data = temp_data
-#                 }
-#               }
-#             }
-#             data[, c(names(pef@Commitments), names(pef@CashFlows))] = zoo::na.fill(data[, c(names(pef@Commitments), names(pef@CashFlows))],0)
-#             data[, names(pef@FMV)] = xts::na.locf(data[, names(pef@FMV)])
-#
-#             data$Undrawn = cumsum(data$Commitment - data$Calls_Total_Gross)
-#             data$DrawdownRate = calc_drawdownRate(calls = data[, "Calls_Total_Gross"],
-#                                                   commits = data[, "Commitment"])
-#             data$DistributionRate = calc_distributionRate(dists = data[, "Distributions_Total"],
-#                                                           fmv = data[, "FMV"])
-#
-#             return(data)
-#           }
-# )
+#----------------------PrivateFund get_data_ggplot definition---------------------------------------------------------
+setGeneric(name = "get_data_ggplot", function(pef, cols,  melt_cols = cols, cumulative_cols = NA_character_, scaledBy =NA_character_, underlying = NA_character_, date_filter=NA_character_) standardGeneric("get_data_ggplot"))
+setMethod(f = "get_data_ggplot",
+          c("PrivateFund", "character", "character", "character", "character", "character", "character" ),
+          function(pef, cols, melt_cols = cols, cumulative_cols = NA_character_, scaledBy = NA_character_, underlying = NA_character_, date_filter=NA_character_) {
+            if(is.na(underlying)) {
+              if(is.na(date_filter)) {
+                xts_data = pef@PeriodData[ , cols]
+              } else {
+                xts_data = pef@PeriodData[date_filter, cols]
+              }
+
+              if(!is.na(cumulative_cols)) {
+                xts_data[, cumulative_cols] = cumsum(zoo::na.fill(xts_data[, cumulative_cols], 0))
+              }
+
+              if(!is.na(scaledBy)) {
+                xts_data = xts_data/abs(sum(na.omit(pef@PeriodData[, scaledBy])))
+              }
+
+
+              df = data.frame(date = zoo::index(xts_data), xts_data)
+              df_melt = data.table::melt(data = df,
+                                         #id.vars = names(df)[which(!(names(df) %in% melt_cols))],
+                                         measure.vars = melt_cols,
+                                         variable.name = "cashflow")
+            } else if(tolower(substr(underlying,1,1)) == "v"){
+              df_list = lapply(pef@UnderlyingVintages$Underlying,
+                               function(v) get_data_ggplot(v, cols, melt_cols, cumulative_cols, scaledBy, underlying = NA_character_,date_filter))
+              names(df_list) = names(pef@UnderlyingVintages$Underlying)
+
+              for(i in 1:length(df_list)) {
+                v = names(df_list)[[i]]
+                if(i == 1) {
+                  df_melt = cbind(df_list[[i]], vintage = rep(v, nrow(df_list[[i]])))
+                } else {
+                  df_melt = rbind(df_melt, cbind(df_list[[i]], vintage = rep(v, nrow(df_list[[i]]))))
+                }
+              }
+            }
+            return(df_melt)
+        }
+)
 
 #----------------------PrivateFund constructor definition---------------------------------------------------------
 PrivateFund = function(name = NA_character_,

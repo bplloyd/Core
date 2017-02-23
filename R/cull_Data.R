@@ -1,4 +1,4 @@
-cull_Data = function(pef, freq)
+cull_data = function(pef, freq)
 {
   if(!is.null(pef@CashFlows)){
     data = cbind(pef@Commitments, pef@CashFlows, pef@FMV)

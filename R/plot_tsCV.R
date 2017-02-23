@@ -1,12 +1,22 @@
-plot_tsCV_comparison = function(result_list, label="MAE", main = "Forecast Validation Comparison", legend_spot = "bottomright", ...){
-  err_stats = lapply(result_list, function(r) colMeans(abs(r[,,"error"]), na.rm = T))
+plot_tsCV_comparison = function(result_list, errFunc, funcArgs = NULL, label="MAE", main = "Forecast Validation Comparison", legend_spot = "bottomright", ylim = NULL, ...){
+
+  err_stats = lapply(result_list,
+                     function(r) apply(r[,,"error"],
+                                       MARGIN = 2,
+                                       FUN = function(c)do.call(what = errFunc,
+                                                                args = append(list(err=c),funcArgs))
+                                       )
+                     )
 
   h=length(err_stats[[1]])
-  # ymax = max(unlist(err_stats))
-  # ymin = min(unlist(err_stats))
+  if(is.null(ylim)) {
+    ymax = max(unlist(err_stats))
+    ymin = min(unlist(err_stats))
+    ylim = c(ymin, ymax)
+  }
   for(i in 1:length(err_stats)) {
     if(i == 1) {
-      plot(1:h, err_stats[[i]],  type="l", col=i, xlab="horizon", ylab=label, lwd = 2, main = main, ...)
+      plot(1:h, err_stats[[i]],  type="l", col=i, xlab="horizon", ylab=label, lwd = 2, main = main, ylim = ylim, ...)
     } else {
       lines(1:h, err_stats[[i]], col = i, lwd = 2)
     }

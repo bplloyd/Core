@@ -1,8 +1,8 @@
 cull_ggplot_data = function(xts_data, melt_cols = names(xts_data), cumulativeCols = NULL, scaledBy = NULL, ...){
   # if(!is.null(na.action))
   #   xts_data = na.action(xts_data)
-  if(!lubridate::is.Date(index(xts_data)))
-    index(xts_data) = zoo::as.Date(index(xts_data))
+  if(!lubridate::is.Date(zoo::index(xts_data)))
+    index(xts_data) = zoo::as.Date(zoo::index(xts_data))
 
   freq = PerformanceAnalytics::Frequency(xts_data)[1]
   if(freq == 12){
@@ -14,7 +14,7 @@ cull_ggplot_data = function(xts_data, melt_cols = names(xts_data), cumulativeCol
     per = "years"
   }
 
-  index(xts_data) = lubridate::ceiling_date(index(xts_data), unit = per) - 1
+  zoo::index(xts_data) = lubridate::ceiling_date(zoo::index(xts_data), unit = per) - 1
 
   if(!is.null(scaledBy)){
     denom = abs(sum(na.omit(xts_data[, scaledBy])))
@@ -22,7 +22,7 @@ cull_ggplot_data = function(xts_data, melt_cols = names(xts_data), cumulativeCol
   }
 
   if(!is.null(cumulativeCols))
-    xts_data[,cumulativeCols] = cumsum(na.fill(xts_data[, cumulativeCols], 0))
+    xts_data[,cumulativeCols] = cumsum(zoo::na.fill(xts_data[, cumulativeCols], 0))
 
 
   df = data.frame(date = zoo::index(xts_data), xts_data)
