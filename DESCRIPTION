@@ -12,18 +12,17 @@ LazyData: true
 Imports: Rcpp (>= 0.12.9),
     xts,
     tvm,
-    lubridate,
     tidyquant,
     dtplyr,
     dplyr,
     data.table,
     RODBC,
-    zoo,
     magrittr,
     wrapr,
     ggplot2,
     forecast,
-    parallel
+    parallel,
+    lubridate
 LinkingTo: Rcpp
 Collate: 
     'aggregatePrivates.R'
@@ -43,8 +42,10 @@ Collate:
     'PrivateFund.R'
     'RcppExports.R'
     'as_ts.R'
+    'cashFlowSimulation.R'
     'compareForecastAccuracy.R'
     'cull_ggplot_data.R'
+    'get_data_ggplot.R'
     'ggCashFlows.R'
     'hello.R'
     'loadIndices.R'
@@ -54,5 +55,8 @@ Collate:
     'rollingForecasts.R'
     'rollingForecasts2.R'
     'rollingForecasts3.R'
+    'rollingForecasts4.R'
+    'rollingForecasts5.R'
     'rollingForecasts_exp.R'
+    'simulateCashRate.R'
 RoxygenNote: 6.0.0

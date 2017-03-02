@@ -1,14 +1,32 @@
-ggCashFlows = function(pef, freq = "m", scaledBy=NULL, title = NULL){
-  df = cull_ggplot_data(pef@PeriodData[,c("Commitment", "Calls_Total_Net", "Calls_Total_Gross", "Distributions_Total", "CashFlows_Net", "FMV")]
-                        #, melt_cols = c("Commitment", "Calls_Total_Net", "Calls_Total_Gross", "Distributions_Total", "FMV"),
-                        ,cumulativeCols = c("Commitment", "Calls_Total_Net", "Calls_Total_Gross", "Distributions_Total", "CashFlows_Net")
-                        , scaledBy = scaledBy)
+ggCashFlows = function(pef, freq = "m", scaledBy=NULL, title = NA_character_){
+  # df = cull_ggplot_data(pef@PeriodData[,c("Commitment", "Calls_Total_Net", "Calls_Total_Gross", "Distributions_Total", "CashFlows_Net", "FMV")]
+  #                       #, melt_cols = c("Commitment", "Calls_Total_Net", "Calls_Total_Gross", "Distributions_Total", "FMV"),
+  #                       ,cumulativeCols = c("Commitment", "Calls_Total_Net", "Calls_Total_Gross", "Distributions_Total", "CashFlows_Net")
+  #                       , scaledBy = scaledBy)
 
+  # df_scaled = get_data_ggplot(pef = pef,
+  #                             cols = c("CashFlows_Net", "FMV"),
+  #                             melt_cols = c("CashFlows_Net", "FMV"),
+  #                             cumulative_cols = c("CashFlows_Net"),
+  #                             date_filter = NA_character_,
+  #                             scaledBy = "Commitment",
+  #                             underlying = "vintages")
+  if(is.na(title)) {
+    title = pef@Name
+  }
+  df= get_data_ggplot(pef = pef,
+                       cols = c("CashFlows_Net", "FMV"),
+                       melt_cols = c("CashFlows_Net", "FMV"),
+                       cumulative_cols = c("CashFlows_Net"),
+                       date_filter = NA_character_,
+                       scaledBy = NA_character_,
+                       underlying = "Vintages")
 
   df[df$cashflow %in% c("Commitment", "Calls_Total_Gross", "Calls_Total_Net"), "value"] = -df[df$cashflow %in% c("Commitment", "Calls_Total_Gross", "Calls_Total_Net"),"value"]
 
-   p =  ggplot2::ggplot(data = df, ggplot2::aes(x=date, y=value, color = cashflow)) + ggplot2::geom_line(size = 1) +
+  p=ggplot2::ggplot(data = df, ggplot2::aes(x=date, y=value, color = cashflow)) + ggplot2::geom_line(size = 1) +
       ggplot2::geom_hline(ggplot2::aes(yintercept = 0)) +
+     #ggplot2::annotate("text", label = "IRR = 1.24", x = as.Date('2009-12-31'), y=1) +
       #ggplot2::theme_minimal() +
       ggplot2::theme_bw() +
       #ggplot2::theme_light() +
