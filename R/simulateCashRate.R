@@ -27,6 +27,10 @@ simulateCashRate = function(pef, rate="DistributionRate", n=100, fit = NULL, cle
                                ic = "aicc",
                                stepwise = F, parallel = T, lambda = lambda)
   }
-  sapply(X = 1:n, function(i) forecast::simulate.Arima(object = fit, nsim = t / delta, future = T))
+  sim1 = forecast::simulate.Arima(object = fit, nsim = t / delta, future = T)
+  dates = lubridate::ceiling_date(as.Date(zoo::index(xts::as.xts(sim1))),
+                                  unit = "months") - 1
+  sims = sapply(X = 1:n, function(i) forecast::simulate.Arima(object = fit, nsim = t / delta, future = T))
+  data.frame(Date = dates, sims)
 }
 
