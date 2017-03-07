@@ -1,7 +1,13 @@
 cull_data = function(pef, freq)
 {
   if(!is.null(pef@CashFlows)){
-    data = cbind(tidyquant::as_xts(pef@Commitments), tidyquant::as_xts(pef@CashFlows), tidyquant::as_xts(pef@FMV))
+    commits = data.frame(Date = row.names(pef@Commitments), pef@Commitments)
+    cf = data.frame(Date = row.names(pef@CashFlows), pef@CashFlows)
+    fmv = data.frame(Date = row.names(pef@FMV), pef@FMV)
+    data = merge(x = commits, y = cf, on = "Date", all = T)
+    data = merge(x = data, y = fmv, on = "Date", all = T)
+    data$Date = as.Date(data$Date)
+    data = tidyquant::as_xts(data, date_col = Date)
 
     freq = tolower(freq)
 
