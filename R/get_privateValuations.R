@@ -22,7 +22,7 @@ get_privateValuations = function(id=NA, strategy=NA, vintage=NA, active = NA, fr
     # else
     #   val = val[zoo::index(val)]
 
-    zoo::index(val) = lubridate::ceiling_date(zoo::index(val), "months")-1
+    #zoo::index(val) = lubridate::ceiling_date(zoo::index(val), "month")-1
 
     return(val[zoo::index(val) >= start(val[val != 0])]/multiplier)
   }

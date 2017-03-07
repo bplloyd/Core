@@ -457,6 +457,7 @@ setMethod(f = "loadUnderlying",
         function(pef, mode, errorListName){
           mode = tolower(strtrim(mode, 1))
           freq = tolower(pef@Freq)
+          active = pef@Active
           if(mode == "f"){
             ids = pef@Holdings$Holding_ID
             names(ids) = as.character(pef@Holdings$Holding_Name)
@@ -481,7 +482,8 @@ setMethod(f = "loadUnderlying",
                                                                 default = NULL,
                                                                 strategy = strategy,
                                                                 vintage = v,
-                                                                freq = freq))
+                                                                freq = freq,
+                                                                active = active))
 
             # cf_agg = matrix(unlist(lapply(underlying,
             #                               function(v){if(class(v) == "PrivateFund"){v@Stats$CashFlows}else{rep(0, 5)}})), ncol = 5, byrow = T)
@@ -558,7 +560,8 @@ setMethod(f = "loadUnderlying",
                                                                     default = NULL,
                                                                     strategy = s,
                                                                     vintage = v,
-                                                                    freq = freq)))
+                                                                    freq = freq,
+                                                                    active = active)))
 
             cf_agg = lapply(strategies,
                             function(s) captureErrors(func = aggregatePrivates,

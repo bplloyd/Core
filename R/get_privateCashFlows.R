@@ -9,11 +9,11 @@ get_privateCashFlows = function(id=NA, strategy=NA, vintage=NA, active = NA, fre
   cf$Effective_Date = as.Date.factor(cf$Effective_Date)
   names(cf)[names(cf) == "Effective_Date"] = "Date"
 
-  cf = dplyr::tbl_df(cf)
+  #cf = dplyr::tbl_df(cf)
 
   if(nrow(cf)>0){
 
-    cf =  dplyr::summarise(dplyr::group_by(cf, Date, Transaction_Description), Amount = sum(Amount))
+    #cf =  dplyr::summarise(dplyr::group_by(cf, Date, Transaction_Description), Amount = sum(Amount))
     cf = data.table::dcast(cf, Date ~  Transaction_Description, fun.aggregate = sum, value.var = "Amount")
     cf_names = names(cf)[2:ncol(cf)]
     cf = tidyquant::as_xts_(cf, date_col = "Date")
@@ -22,21 +22,41 @@ get_privateCashFlows = function(id=NA, strategy=NA, vintage=NA, active = NA, fre
     distCols = grep("Distribution", names(cf))
     feeCol = grep("FeesAndExpenses", names(cf))
 
-    if(length(callCols) > 0)
-      calls = xts::xts(apply(cf[, callCols], 1, sum), order.by = zoo::index(cf))
-    else
-      calls = xts::xts(rep(0, nrow(cf)), order.by = zoo::index(cf))
+    if(length(callCols) > 0){
+      for(i in 1:length(callCols)){
+        if(i==1){
+          calls = cf[, callCols[i]]
+        } else {
+          calls = calls + cf[, callCols[i]]
+        }
 
-    if(length(distCols) > 0)
-      dists = xts::xts(apply(cf[, distCols], 1, sum), order.by = zoo::index(cf))
-    else
-      dists = xts::xts(rep(0, nrow(cf)), order.by = zoo::index(cf))
 
-    if(length(feeCol) > 0)
+        #calls = xts::xts(apply(cf[, callCols], 1, sum), order.by = zoo::index(cf))
+      }
+    } else {
+      calls = cf[, 1]
+      calls[, ] = 0
+    }
+    if(length(distCols) > 0){
+      #dists = xts::xts(apply(cf[, distCols], 1, sum), order.by = zoo::index(cf))
+      for(i in 1:length(distCols)){
+        if(i==1){
+          dists = cf[, distCols[i]]
+        } else {
+          dists = dists + cf[, distCols[i]]
+        }
+      }
+    } else {
+      dists = cf[, 1]
+      dists[, ] = 0
+    }
+
+    if(length(feeCol) > 0){
       fees = cf[, feeCol]
-    else
-      fees = xts::xts(rep(0, nrow(cf)), order.by = zoo::index(cf))
-
+    } else {
+      fees = cf[, 1]
+      fees[, ] = 0
+    }
 
     cf$Calls_Total_Net = calls
     cf$Calls_Total_Gross = calls - fees
@@ -48,7 +68,7 @@ get_privateCashFlows = function(id=NA, strategy=NA, vintage=NA, active = NA, fre
       cf[, c("CashFlows_Net", "CashFlows_Gross")] = -1*cf[, c("CashFlows_Net", "CashFlows_Gross")]
 
     if(freq != "d"){
-      zoo::index(cf) = lubridate::ceiling_date(zoo::index(cf), "months") - 1
+      zoo::index(cf) = lubridate::ceiling_date(zoo::index(cf), "month") - 1
       epts = xts::endpoints(cf, "months")
       num_months = switch(freq, 'm' = 1, 'q' = 3, 'y' = 12)
       if(length(epts)>2){

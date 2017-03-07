@@ -9,7 +9,9 @@ cull_data = function(pef, freq)
     {
       per = switch(freq, 'm' = "months", 'q' = "quarters", 'y' = "years")
       num_months = switch(freq, 'm' = 1, 'q' = 3, 'y' = 12)
-      zoo::index(data) = lubridate::ceiling_date(zoo::index(data), per) - 1
+      #zoo::index(data) = lubridate::ceiling_date(zoo::index(data), per) - 1
+      lubridate::day(zoo::index(data)) = lubridate::days_in_month(zoo::index(data))
+
       epts = xts::endpoints(data, per)
 
       if(length(epts)>2)
@@ -20,8 +22,9 @@ cull_data = function(pef, freq)
         fmv = data[epts, names(pef@FMV)]
         data = cbind(commits, cf, fmv)
 
+        fillDates = lubridate::add_with_rollback(e1 = start(data), months(0:(lubridate::interval(start(data), end(data))/months(num_months))))
+        lubridate::day(fillDates) = lubridate::days_in_month(fillDates)
 
-        fillDates = lubridate::ceiling_date(lubridate::add_with_rollback(e1 = start(data), months(0:(lubridate::interval(start(data), end(data))/months(num_months)))), unit = "m") - 1
         #fillDates = lubridate::ceiling_date(start(data) %m+% months(0:(lubridate::interval(start(data), end(data))/months(num_months))), per) - 1
 
         if(length(fillDates) != nrow(data))

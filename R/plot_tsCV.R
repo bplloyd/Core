@@ -1,7 +1,7 @@
 plot_tsCV_comparison = function(result_list, errFunc, funcArgs = NULL, label="MAE", main = "Forecast Validation Comparison", legend_spot = "bottomright", ylim = NULL, ...){
 
   err_stats = lapply(result_list,
-                     function(r) apply(r[,,"error"],
+                     function(r) apply(r$analysis[,,"error"],
                                        MARGIN = 2,
                                        FUN = function(c)do.call(what = errFunc,
                                                                 args = append(list(err=c),funcArgs))
@@ -33,10 +33,10 @@ plot_tsCV_rolling_error = function(result_array, err_func = function(r)mean(abs(
     plot(1:dim(result_array)[1], result, type = "l", main = main, ...)
   } else if(is.list(result_array)) {
     for(i in 1:length(result_array)) {
-      inc_rows = which(apply(result_array[[i]][,,"error"], 1, function(r)return(all(!is.na(r)))))
+      inc_rows = which(apply(result_array[[i]]$analysis[,,"error"], 1, function(r)return(all(!is.na(r)))))
       #plot(inc_rows, apply(result_array[inc_rows,,"error"], 1, function(r) err_func(r)), type = "l", main = main)
-      result = rep(NA, dim(result_array[[i]])[1])
-      result[inc_rows] = apply(result_array[[i]][,,"error"], 1, function(r) err_func(r))
+      result = rep(NA, dim(result_array[[i]]$analysis)[1])
+      result[inc_rows] = apply(result_array[[i]]$analysis[,,"error"], 1, function(r) err_func(r))
       if(i == 1){
         plot(1:length(result), result, type = "l", main = main, col = i, ...)
       } else {
@@ -44,4 +44,19 @@ plot_tsCV_rolling_error = function(result_array, err_func = function(r)mean(abs(
       }
     }
   }
+}
+
+tsCV_comparison = function(result_list, lastN = NULL, errFunc, funcArgs = NULL, label="MAE", main = "Forecast Validation Comparison", legend_spot = "bottomright", ylim = NULL, ...){
+  if(is.null(lastN)){
+    lastN = nrow(result_list[[1]]$analysis[,,"error"])
+  }
+
+  lapply(result_list,
+                     function(r) apply(r$analysis[lastN:dim(r$analysis)[1],,"error"],
+                                       MARGIN = 2,
+                                       FUN = function(c)do.call(what = errFunc,
+                                                                args = append(list(err=c),funcArgs))
+                     )
+  )
+
 }

@@ -10,11 +10,7 @@ License: What license is it under?
 Encoding: UTF-8
 LazyData: true
 Imports: Rcpp (>= 0.12.9),
-    xts,
     tvm,
-    tidyquant,
-    dtplyr,
-    dplyr,
     data.table,
     RODBC,
     magrittr,
@@ -22,7 +18,7 @@ Imports: Rcpp (>= 0.12.9),
     ggplot2,
     forecast,
     parallel,
-    lubridate
+    tidyquant
 LinkingTo: Rcpp
 Collate: 
     'aggregatePrivates.R'
@@ -58,5 +54,6 @@ Collate:
     'rollingForecasts4.R'
     'rollingForecasts5.R'
     'rollingForecasts_exp.R'
+    'rollingForecasts_final.R'
     'simulateCashRate.R'
 RoxygenNote: 6.0.0
