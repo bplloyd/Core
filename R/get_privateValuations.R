@@ -24,7 +24,7 @@ get_privateValuations = function(id=NA, strategy=NA, vintage=NA, active = NA, fr
 
     #zoo::index(val) = lubridate::ceiling_date(zoo::index(val), "month")-1
 
-    return(val[zoo::index(val) >= start(val[val != 0])]/multiplier)
+    return(as.data.frame(val[zoo::index(val) >= start(val[val != 0])]/multiplier))
   }
   else
     return(NULL)

@@ -34,7 +34,7 @@ get_privateCommitments = function(id=NA, strategy=NA, vintage=NA, active = NA, f
         zoo::index(commits) = lubridate::ceiling_date(zoo::index(commits), "years") - 1
       }
     }
-    return(commits/multiplier)
+    return(as.data.frame(commits/multiplier))
   } else {
     return(NULL)
   }

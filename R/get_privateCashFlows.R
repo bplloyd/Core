@@ -99,7 +99,7 @@ get_privateCashFlows = function(id=NA, strategy=NA, vintage=NA, active = NA, fre
         cf = temp_cf
       }
     }
-    return(cf/multiplier)
+    return(as.data.frame(cf/multiplier))
   } else {
     return(NULL)
   }

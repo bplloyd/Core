@@ -198,7 +198,7 @@ setMethod("initialize",
             if(is.null(fmv)){
               fmv_end = 0
             } else {
-              fmv_end = fmv[nrow(fmv)]
+              fmv_end = fmv[nrow(fmv),]
             }
 
             if(is.null(publicBM)){

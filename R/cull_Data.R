@@ -1,7 +1,7 @@
 cull_data = function(pef, freq)
 {
   if(!is.null(pef@CashFlows)){
-    data = cbind(pef@Commitments, pef@CashFlows, pef@FMV)
+    data = cbind(tidyquant::as_xts(pef@Commitments), tidyquant::as_xts(pef@CashFlows), tidyquant::as_xts(pef@FMV))
 
     freq = tolower(freq)
 
@@ -47,7 +47,7 @@ cull_data = function(pef, freq)
     data$DistributionRate = calc_distributionRate(dists = data[, "Distributions_Total"],
                                                   fmv = data[, "FMV"])
 
-    return(data)
+    return(as.data.frame(data))
   } else {
     return(NULL)
   }
