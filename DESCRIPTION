@@ -18,9 +18,10 @@ Imports: Rcpp (>= 0.12.9),
     ggplot2,
     forecast,
     parallel,
-    tidyquant
+    tidyquant,
+    xts
 LinkingTo: Rcpp
-Collate: 
+Collate:
     'aggregatePrivates.R'
     'captureErrors.R'
     'calc_PME.R'
