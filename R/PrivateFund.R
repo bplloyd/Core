@@ -462,7 +462,7 @@ setMethod(f = "loadUnderlying",
           mode = tolower(strtrim(mode, 1))
           freq = tolower(pef@Freq)
           active = pef@Active
-          pme_bm = pef$PME_Benchmark
+          pme_bm = pef@PME_Benchmark
           if(mode == "f"){
             ids = pef@Holdings$Holding_ID
             names(ids) = as.character(pef@Holdings$Holding_Name)
