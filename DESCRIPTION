@@ -21,7 +21,7 @@ Imports: Rcpp (>= 0.12.9),
     tidyquant,
     xts
 LinkingTo: Rcpp
-Collate:
+Collate: 
     'aggregatePrivates.R'
     'captureErrors.R'
     'calc_PME.R'
@@ -43,10 +43,13 @@ Collate:
     'compareForecastAccuracy.R'
     'cull_ggplot_data.R'
     'get_data_ggplot.R'
+    'get_rate.R'
+    'get_series.R'
     'ggCashFlows.R'
     'hello.R'
     'loadIndices.R'
     'mae.R'
+    'me.R'
     'plot_tsCV.R'
     'rmse.R'
     'rollingForecasts.R'

@@ -1,12 +1,13 @@
 simulateCashRate = function(pef, rate="DistributionRate", n=100, fit = NULL, clean = T, t = 5, lambda_bc = F) {
 
-  xts_rate = na.omit(pef@PeriodData[, rate])
+  #dates = as.Date(row.names(pef@PeriodData)[which(!is.na(pef@PeriodData[, rate]))])
+  df_rate = na.omit(subset(pef@PeriodData, rep(T, nrow(pef@PeriodData)), rate))
 
   if(clean){
-    xts_rate =  PerformanceAnalytics::clean.boudt(xts_rate)[[1]]
+    df_rate =  PerformanceAnalytics::clean.boudt(df_rate)[[1]]
   }
 
-  ts_rate = as_ts(xts_rate)
+  ts_rate = as_ts(df_rate)
   delta = 1/tsp(ts_rate)[3]
 
 

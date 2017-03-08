@@ -3,14 +3,14 @@ cashFlowSimulation = function( I0, L0, D0, R0, C0, sig_S, sig_F, mu_S, mu_F, dis
     t = nrow(dist_rate) * delta
     n = ncol(dist_rate)
   }
-  dists = coreActive@PeriodData[, "Distributions_Total"]
-  calls = coreActive@PeriodData[, "Calls_Total_Gross"]
+  dists = get_series(pef, "Distributions_Total")
+  calls =  get_series(pef, "Calls_Total_Gross")
 
   I0 = as.numeric(allocation_dollars[nrow(allocation_dollars), "ILLIQUID"])/1000000
   L0 = as.numeric(allocation_dollars[nrow(allocation_dollars), "LIQUID"])/1000000
-  C0 = as.numeric(coreActive@PeriodData[nrow(coreActive@PeriodData), "Undrawn"])
-  D0 = as.numeric(cumsum(dists)[nrow(calls)])
-  R0 = as.numeric(cumsum(dists)[nrow(dists)])
+  C0 = as.numeric(pef@PeriodData[nrow(pef@PeriodData), "Undrawn"])
+  D0 = as.numeric(cumsum(calls)[nrow(calls),])
+  R0 = as.numeric(cumsum(dists)[nrow(dists),])
 
   sig_S = 0.04
   mu_S = 0.01
@@ -23,7 +23,7 @@ cashFlowSimulation = function( I0, L0, D0, R0, C0, sig_S, sig_F, mu_S, mu_F, dis
   delta=1/12
   t=5
 
-  dist_rate = simulateCashRate(coreActive, n=n, t=t, lambda_bc = T)
+  dist_rate = simulateCashRate(pef, n=n, t=t, lambda_bc = T)
   dist_sims = as.matrix((1/delta) *  dist_rate$Simulations)
 
   dd_rate = simulateCashRate(coreActive, rate = "DrawdownRate", n=n, t=t, lambda_bc = F)
