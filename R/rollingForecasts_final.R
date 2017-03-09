@@ -62,13 +62,18 @@ rollingForecasts_final = function (y, forecastfunction, h = 12, level = c(80, 95
                       if(is.null(fitfunction)) {
                         try(do.call(forecastfunction, append(list(y = subset(y,end = i),h = h,level = level), fcast_args)),
                             silent = TRUE)
+                        #acc = try(do.call(forecast::accuracy(fcast, subset(y, start = i+1, end = i+h))))
+                        #return(list(fit = fit, fcast = fcast, accuracy = acc))
                       } else {
                         fit = try(do.call(fitfunction, append(list(y=subset(y, end = i)), fit_args)),
                                   silent = TRUE)
                         try(do.call(forecastfunction, append(list(object = fit, h = h, level = level),
                                                              fcast_args)),
                             silent = TRUE)
+                        #acc = try(do.call(forecast::accuracy(fcast, subset(y, start = i+1, end = i+h))))
+                        #return(list(fit = fit, fcast = fcast, accuracy = acc))
                       }
+
                     })
   }
   for (i in seq_len(n)) {
