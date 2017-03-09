@@ -19,7 +19,8 @@ Imports: Rcpp (>= 0.12.9),
     forecast,
     parallel,
     tidyquant,
-    xts
+    xts,
+    Quandl
 LinkingTo: Rcpp
 Collate: 
     'aggregatePrivates.R'
@@ -42,6 +43,7 @@ Collate:
     'cashFlowSimulation.R'
     'compareForecastAccuracy.R'
     'cull_ggplot_data.R'
+    'getFamaFactors.R'
     'get_data_ggplot.R'
     'get_rate.R'
     'get_series.R'
