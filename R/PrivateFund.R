@@ -22,6 +22,7 @@ setClass("PrivateFund",
                                 Commitments = "ANY",
                                 PeriodData = "ANY",
                                 Holdings = "data.frame",
+                                PME_Benchmark = "ANY",
                                 UnderlyingVintages = "list",
                                 UnderlyingStrategies = "list",
                                 UnderlyingFunds = "list",
@@ -53,6 +54,7 @@ setMethod("initialize",
                    fmv = NULL,
                    periodData = NULL,
                    holdings = NULL,
+                   pme_bm = NULL,
                    underlyingVintages = list(),
                    underlyingStrategies = list(),
                    underlyingFunds = list(),
@@ -60,7 +62,6 @@ setMethod("initialize",
                    dataFreq = "m",
                    multiplier = 1e+06,
                    active = NA_integer_,
-                   publicBM = NULL,
                    loadVintages = F,
                    loadStrategies = F,
                    loadFunds = F
@@ -201,8 +202,8 @@ setMethod("initialize",
               fmv_end = fmv[nrow(fmv),]
             }
 
-            if(is.null(publicBM)){
-              publicBM = loadIndices("SPTR")
+            if(is.null(pme_bm)){
+              pme_bm = as.data.frame(loadIndices("SPTR"))
             }
 
             # pme = calc_PME(cashFlows[, "CashFlows_Net"], fmv = fmv, bm = publicBM)
@@ -240,9 +241,9 @@ setMethod("initialize",
                 pme =  captureErrors(func = calc_PME,
                                      captureList = errorListName,
                                      default = NULL,
-                                     cf = cashFlows[, "CashFlows_Net"],
+                                     cf = cashFlows,
                                      fmv = fmv,
-                                     bm = publicBM)
+                                     bm = pme_bm)
 
 
                 #pme_perf = try(calc_privatePerformance(cashFlows, pme))
@@ -306,6 +307,7 @@ setMethod("initialize",
             .Object@UnderlyingVintages = underlyingVintages
             .Object@UnderlyingStrategies = underlyingStrategies
             .Object@Stats = stats
+            .Object@PME_Benchmark = pme_bm
 
             #.Object@PeriodData = cull_Data(.Object, dataFreq)
             .Object@PeriodData = captureErrors(func = cull_data,
@@ -390,6 +392,7 @@ PrivateFund = function(name = NA_character_,
                         fmv = NULL,
                         periodData = NULL,
                         holdings = NULL,
+                        pme_bm = NULL,
                         underlyingFunds = list(),
                         underlyingVintages = list(),
                         underlyingStrategies = list(),
@@ -413,6 +416,7 @@ PrivateFund = function(name = NA_character_,
       fmv = fmv,
       periodData = periodData,
       holdings = holdings,
+      pme_bm = pme_bm,
       underlyingFunds = underlyingFunds,
       underlyingStrategies = underlyingStrategies,
       underlyingVintages = underlyingVintages,
@@ -458,6 +462,7 @@ setMethod(f = "loadUnderlying",
           mode = tolower(strtrim(mode, 1))
           freq = tolower(pef@Freq)
           active = pef@Active
+          pme_bm = pef@PME_Benchmark
           if(mode == "f"){
             ids = pef@Holdings$Holding_ID
             names(ids) = as.character(pef@Holdings$Holding_Name)
@@ -467,7 +472,8 @@ setMethod(f = "loadUnderlying",
                                                                 captureList = errorListName,
                                                                 default = NULL,
                                                                 id  =  id,
-                                                                freq = freq))
+                                                                freq = freq,
+                                                                pme_bm = pme_bm))
 
 
           } else if (mode == "v"){
@@ -483,7 +489,8 @@ setMethod(f = "loadUnderlying",
                                                                 strategy = strategy,
                                                                 vintage = v,
                                                                 freq = freq,
-                                                                active = active))
+                                                                active = active,
+                                                          pme_bm = pme_bm))
 
             # cf_agg = matrix(unlist(lapply(underlying,
             #                               function(v){if(class(v) == "PrivateFund"){v@Stats$CashFlows}else{rep(0, 5)}})), ncol = 5, byrow = T)
@@ -561,7 +568,8 @@ setMethod(f = "loadUnderlying",
                                                                     strategy = s,
                                                                     vintage = v,
                                                                     freq = freq,
-                                                                    active = active)))
+                                                                    active = active,
+                                                                    pme_bm = pme_bm)))
 
             cf_agg = lapply(strategies,
                             function(s) captureErrors(func = aggregatePrivates,

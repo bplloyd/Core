@@ -56,8 +56,13 @@ calc_multiple = function(dists, calls, fmv, asOfDate = NULL)
 calc_privatePerformance = function(cf, fmv, asOfDate = NULL)
 {
   if(!is.null(cf)){
+    cf = data.frame(Date = as.Date(row.names(cf)), cf)
+    cf = tidyquant::as_xts(cf, date_col = Date)
     if(is.null(fmv)){
-      fmv = xts(rep(0, nrow(cf)), order.by = zoo::index(cf))
+      fmv = xts::xts(rep(0, nrow(cf)), order.by = zoo::index(cf))
+    } else {
+      fmv = data.frame(Date = as.Date(row.names(fmv)), fmv)
+      fmv = tidyquant::as_xts(fmv, date_col = Date)
     }
     if(is.null(asOfDate)){
       asOfDate = max(end(cf), end(fmv))
