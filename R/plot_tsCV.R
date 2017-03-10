@@ -16,7 +16,8 @@ plot_tsCV_comparison = function(result_list, errFunc, funcArgs = NULL, label="MA
   }
   for(i in 1:length(err_stats)) {
     if(i == 1) {
-      plot(1:h, err_stats[[i]],  type="l", col=i, xlab="horizon", ylab=label, lwd = 2, main = main, ylim = ylim, ...)
+      #plot(1:h, err_stats[[i]],  type="l", col=i, xlab="horizon", ylab=label, lwd = 2, main = main, ylim = ylim, ...)
+      plot(1:h, err_stats[[i]],  type="l", col=i, xlab="horizon", ylab=label, lwd = 2, main = main, ylim = ylim)
     } else {
       lines(1:h, err_stats[[i]], col = i, lwd = 2)
     }
