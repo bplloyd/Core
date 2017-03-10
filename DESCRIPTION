@@ -41,6 +41,7 @@ Collate:
     'RcppExports.R'
     'as_ts.R'
     'cashFlowSimulation.R'
+    'chart.rollingCorrelation2.R'
     'compareForecastAccuracy.R'
     'cull_ggplot_data.R'
     'getFamaFactors.R'
