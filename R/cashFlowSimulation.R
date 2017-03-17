@@ -1,10 +1,12 @@
-cashFlowSimulation = function( I0, L0, D0, R0, C0, sig_S, sig_F, mu_S, mu_F, dist_rate=NULL, dd_rate=NULL, rho=0.5, lambda=0.2, v=0.01, n=100, delta=1/12, t=5) {
+cashFlowSimulation = function(I0, L0, D0, R0, C0, sig_S, sig_F, mu_S, mu_F, dist_rate=NULL, dd_rate=NULL, rho=0.5, lambda=0.2, v=0.01, n=100, delta=1/12, t=5) {
   if(is.matrix(dist_rate)) {
     t = nrow(dist_rate) * delta
     n = ncol(dist_rate)
   }
-  dists = get_series(pef, "Distributions_Total")
-  calls =  get_series(pef, "Calls_Total_Gross")
+  dists = get_series(pef, "Distributions_Total", clean  = F)
+  dist_rate = get_series(pef, "DistributionRate")
+  dd_rate = get_series(pef, "DrawdownRate")
+  calls =  get_series(pef, "Calls_Total_Gross", clean = F)
 
   I0 = as.numeric(allocation_dollars[nrow(allocation_dollars), "ILLIQUID"])/1000000
   L0 = as.numeric(allocation_dollars[nrow(allocation_dollars), "LIQUID"])/1000000

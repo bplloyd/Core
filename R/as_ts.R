@@ -16,7 +16,8 @@ as_ts = function(data, freq=12, dates = NULL, start=NULL, end=NULL){
     end = max(dates)
     end = c(lubridate::year(end), lubridate::month(end))
   }
-  return(ts(data = as.vector(data),
+  data = data[1:nrow(data), 1]
+  return(ts(data = data,
             start = start,
             end = end,
             frequency = freq))

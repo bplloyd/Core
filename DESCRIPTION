@@ -20,7 +20,8 @@ Imports: Rcpp (>= 0.12.9),
     parallel,
     tidyquant,
     xts,
-    Quandl
+    Quandl,
+    quantmod
 LinkingTo: Rcpp
 Collate: 
     'aggregatePrivates.R'
@@ -43,22 +44,31 @@ Collate:
     'cashFlowSimulation.R'
     'chart.rollingCorrelation2.R'
     'compareForecastAccuracy.R'
+    'createTimeSlices2.R'
     'cull_data.R'
     'cull_ggplot_data.R'
     'decompose_beta.R'
+    'extractFieldFromRoll.R'
+    'extractRolledRiskContribution.R'
+    'extractSingleBetaroll.R'
     'fmmc_factorContribution.R'
+    'forecastScatter.R'
+    'forecast_errors.R'
     'getFamaFactors.R'
+    'getSpReturns.R'
     'get_data_ggplot.R'
     'get_rate.R'
     'get_series.R'
     'ggCashFlows.R'
     'hello.R'
     'loadIndices.R'
+    'loadMLFI.R'
     'mae.R'
     'me.R'
     'plot_tsCV.R'
     'risk_decomp.R'
     'rmse.R'
+    'rollTsfm2.R'
     'rollingForecasts.R'
     'rollingForecasts2.R'
     'rollingForecasts3.R'
@@ -67,4 +77,5 @@ Collate:
     'rollingForecasts_exp.R'
     'rollingForecasts_final.R'
     'simulateCashRate.R'
+    'stlm_factory.R'
 RoxygenNote: 6.0.0

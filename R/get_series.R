@@ -6,5 +6,5 @@ get_series = function(pef, nm = "DistributionRate", clean = T, na.rm = T){
   if(clean){
     res = PerformanceAnalytics::clean.boudt(res)[[1]]
   }
-  return(res)
+  return(as.data.frame(res))
 }
