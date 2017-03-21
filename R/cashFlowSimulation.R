@@ -3,8 +3,10 @@ cashFlowSimulation = function(I0, L0, D0, R0, C0, sig_S, sig_F, mu_S, mu_F, dist
     t = nrow(dist_rate) * delta
     n = ncol(dist_rate)
   }
+  pef = coreActive
   dists = get_series(pef, "Distributions_Total", clean  = F)
-  dist_rate = get_series(pef, "DistributionRate")
+  dist_rate = as_ts(get_series(pef, "DistributionRate"))
+
   dd_rate = get_series(pef, "DrawdownRate")
   calls =  get_series(pef, "Calls_Total_Gross", clean = F)
 

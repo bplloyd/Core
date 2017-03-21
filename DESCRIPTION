@@ -65,6 +65,7 @@ Collate:
     'loadMLFI.R'
     'mae.R'
     'me.R'
+    'my_cvts.R'
     'plot_tsCV.R'
     'risk_decomp.R'
     'rmse.R'

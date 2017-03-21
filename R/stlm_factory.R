@@ -102,3 +102,25 @@ nnetar_factory = function(boxCox = T, p=NULL, P=1, size=NULL, repeats = 20) {
     }
   }
 }
+
+hybrid_factory = function(models = "ans", boxCox = T, s.args = NULL, a.args = NULL, e.args = NULL, n.args = NULL,  t.args = NULL) {
+  if(boxCox) {
+    return(function(x) forecastHybrid::hybridModel(x,
+                                                   a.args = a.args,
+                                                   s.args = s.args,
+                                                   e.args = e.args,
+                                                   n.args = n.args,
+                                                   t.args = t.args,
+                                                   lambda = forecast::BoxCox.lambda(x)
+
+    ))
+  } else {
+    return(function(x)forecastHybrid::hybridModel(x,
+                                                  a.args = a.args,
+                                                  s.args = s.args,
+                                                  e.args = e.args,
+                                                  n.args = n.args,
+                                                  t.args = t.args
+    ))
+  }
+}
