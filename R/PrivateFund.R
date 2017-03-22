@@ -6,7 +6,7 @@
 #' @include get_privateCashFlows.R
 #' @include get_privateValuations.R
 #' @include calc_privatePerformance.R
-#' @include cull_Data.R
+#' @include cull_data.R
 #' @include calc_PME.R
 #' @include captureErrors.R
 #' @include aggregatePrivates.R
