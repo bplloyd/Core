@@ -43,6 +43,7 @@ Collate:
     'as_ts.R'
     'cashFlowSimulation.R'
     'chart.rollingCorrelation2.R'
+    'combineCVTS.R'
     'compareForecastAccuracy.R'
     'createTimeSlices2.R'
     'cull_ggplot_data.R'
