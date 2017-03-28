@@ -3,8 +3,8 @@ combineCVTS = function(cvts_list, weights = rep(1/length(cvts_list), length(cvts
   net_pos = grep("nnetar", classes)
   # if(length(net_pos) == 0){
   forecasts = lapply(names(cvts_list[[1]]$forecasts), function(d)list(mean = sapply(cvts_list, function(cv) cv$forecasts[[d]]$mean),
-                                                                      upper = sapply(cvts_list, function(cv) cv$forecasts[[d]]$upper),
-                                                                      lower = sapply(cvts_list, function(cv)cv$forecasts[[d]]$lower)))
+                                                                      upper = lapply(cvts_list, function(cv) cv$forecasts[[d]]$upper),
+                                                                      lower = lapply(cvts_list, function(cv)cv$forecasts[[d]]$lower)))
 
 
   # } else {

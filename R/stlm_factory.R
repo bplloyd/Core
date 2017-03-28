@@ -1,6 +1,6 @@
-stlm_factory = function(boxCox = T, s.window = "periodic", robust=F, method = "ets", modelfunction = NULL, model = NULL, etsmodel = "ZZN", biasadj = F, xreg = NULL, allow.multiplicative.trend = F, ... ){
+stlm_factory = function(boxCox = T, s.window = "periodic", robust=F, method = "ets", modelfunction = NULL, model = NULL, etsmodel = "ZZN", biasadj = F, allow.multiplicative.trend = F, ... ){
   if(boxCox){
-    return(function(x)forecast::stlm(x,
+    return(function(x, xreg=NULL)forecast::stlm(x,
                           s.window = s.window,
                           robust = robust,
                           method = method,
@@ -13,7 +13,7 @@ stlm_factory = function(boxCox = T, s.window = "periodic", robust=F, method = "e
                           lambda = forecast::BoxCox.lambda(x),
                           ...))
   } else {
-    return(function(x) forecast::stlm(x,
+    return(function(x, xreg=NULL) forecast::stlm(x,
                           s.window = s.window,
                           robust = robust,
                           method = method,
@@ -29,43 +29,47 @@ stlm_factory = function(boxCox = T, s.window = "periodic", robust=F, method = "e
 }
 
 
-arima_factory = function(order = NULL, seasonal = NULL, boxCox = T, xreg = NULL, include.mean = T, include.drift = F, biasadj = F) {
+arima_factory = function(order = NULL, seasonal = NULL, boxCox = T, include.mean = T, include.drift = F, biasadj = F) {
   if(is.null(order) & is.null(seasonal)){
     if(boxCox) {
-      return(function(x) forecast::auto.arima(x,
+      return(function(x, xreg=NULL) forecast::auto.arima(x,
                                               max.P = 5,
                                               max.Q = 5,
                                               max.d = 5,
                                               max.D = 5,
                                               lambda = forecast::BoxCox.lambda(x),
-                                              biasadj = biasadj
+                                              biasadj = biasadj,
+                                              xreg = xreg
                                               ))
     } else {
-      return(function(x) forecast::auto.arima(x,
+      return(function(x, xreg=NULL) forecast::auto.arima(x,
                                               max.P = 5,
                                               max.Q = 5,
                                               max.d = 5,
                                               max.D = 5,
-                                              biasadj = biasadj
+                                              biasadj = biasadj,
+                                              xreg = xreg
       ))
     }
   } else {
     if(boxCox) {
-      return(function(x) forecast::Arima(x,
+      return(function(x, xreg=NULL) forecast::Arima(x,
                                          order = order,
                                          seasonal = seasonal,
                                          include.mean = include.mean,
                                          include.drift = include.drift,
                                          lambda = forecast::BoxCox.lambda(x),
-                                          biasadj = biasadj
+                                          biasadj = biasadj,
+                                         xreg = xreg
       ))
     } else {
-      return(function(x) forecast::Arima(x,
+      return(function(x, xreg=NULL) forecast::Arima(x,
                                          order = order,
                                          seasonal = seasonal,
                                          include.mean = include.mean,
                                          include.drift = include.drift,
-                                         biasadj = biasadj
+                                         biasadj = biasadj,
+                                         xreg = xreg
       ))
     }
   }
@@ -75,29 +79,29 @@ nnetar_factory = function(boxCox = T, p=NULL, P=1, size=NULL, repeats = 20) {
   if(boxCox) {
     if(is.null(p)) {
       if(is.null(size)){
-        return(function(x) forecast::nnetar(x, P=P, repeats = repeats, lambda = forecast::BoxCox.lambda(x)))
+        return(function(x, xreg=NULL) forecast::nnetar(x, P=P, repeats = repeats, lambda = forecast::BoxCox.lambda(x), xreg = xreg))
       } else {
-        return(function(x) forecast::nnetar(x, P=P, size = size, repeats = repeats, lambda = forecast::BoxCox.lambda(x)))
+        return(function(x, xreg=NULL) forecast::nnetar(x, P=P, size = size, repeats = repeats, lambda = forecast::BoxCox.lambda(x), xreg = xreg))
       }
     } else {
       if(is.null(size)){
-        return(function(x) forecast::nnetar(x, p = p, P=P, repeats = repeats, lambda = forecast::BoxCox.lambda(x)))
+        return(function(x, xreg=NULL) forecast::nnetar(x, p = p, P=P, repeats = repeats, lambda = forecast::BoxCox.lambda(x), xreg = xreg))
       } else {
-        return(function(x) forecast::nnetar(x, p = p, P=P, size = size, repeats = repeats, lambda = forecast::BoxCox.lambda(x)))
+        return(function(x, xreg=NULL) forecast::nnetar(x, p = p, P=P, size = size, repeats = repeats, lambda = forecast::BoxCox.lambda(x), xreg = xreg))
       }
     }
   } else {
     if(is.null(p)) {
       if(is.null(size)){
-        return(function(x) forecast::nnetar(x, P=P, repeats = repeats))
+        return(function(x, xreg=NULL) forecast::nnetar(x, P=P, repeats = repeats, xreg = xreg))
       } else {
-        return(function(x) forecast::nnetar(x, P=P, size = size, repeats = repeats))
+        return(function(x, xreg=NULL) forecast::nnetar(x, P=P, size = size, repeats = repeats, xreg = xreg))
       }
     } else {
       if(is.null(size)){
-        return(function(x) forecast::nnetar(x, p = p, P=P, repeats = repeats))
+        return(function(x, xreg=NULL) forecast::nnetar(x, p = p, P=P, repeats = repeats, xreg = xreg))
       } else {
-        return(function(x) forecast::nnetar(x, p = p, P=P, size = size, repeats = repeats))
+        return(function(x, xreg=NULL) forecast::nnetar(x, p = p, P=P, size = size, repeats = repeats, xreg = xreg))
       }
     }
   }

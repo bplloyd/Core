@@ -67,6 +67,7 @@ Collate:
     'me.R'
     'my_cvts.R'
     'plot_tsCV.R'
+    'rank_cvts.R'
     'risk_decomp.R'
     'rmse.R'
     'rollTsfm2.R'
@@ -77,6 +78,8 @@ Collate:
     'rollingForecasts5.R'
     'rollingForecasts_exp.R'
     'rollingForecasts_final.R'
+    'simulate.hybrid.R'
     'simulateCashRate.R'
+    'simulate_stlm.R'
     'stlm_factory.R'
 RoxygenNote: 6.0.0
