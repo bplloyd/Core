@@ -27,7 +27,25 @@ stlm_factory = function(boxCox = T, s.window = "periodic", robust=F, method = "e
                           ...))
   }
 }
-
+ets_factory = function(boxCox = T, model = "ZZZ", biasadj = F, damped = NULL, allow.multiplicative.trend = F, ... ){
+  if(boxCox){
+    return(function(x, xreg=NULL)forecast::ets(y = x,
+                                                model = model,
+                                                lambda = forecast::BoxCox.lambda(x),
+                                                biasadj = biasadj,
+                                                allow.multiplicative.trend = allow.multiplicative.trend,
+                                               damped = damped,
+                                                ...))
+  } else {
+    return(function(x, xreg=NULL)forecast::ets(y = x,
+                                               model = model,
+                                               lambda = NULL,
+                                               biasadj = biasadj,
+                                               allow.multiplicative.trend = allow.multiplicative.trend,
+                                               damped = damped,
+                                               ...))
+  }
+}
 
 arima_factory = function(order = NULL, seasonal = NULL, boxCox = T, include.mean = T, include.drift = F, biasadj = F) {
   if(is.null(order) & is.null(seasonal)){
