@@ -1,4 +1,4 @@
-plot.sim = function(sim, actual, quantiles=NULL, levels=NULL, ylim = NULL, lwd=2,...){
+ggplot.sim = function(sim, actual, quantiles=NULL, levels=NULL, ylim = NULL, lwd=2,...){
   if(!("ts" %in% class(sim))){
     t0_sim = zoo::as.Date(zoo::as.yearmon(row.names(sim)[1]))
     t0_act = zoo::as.Date(zoo::as.yearmon(row.names(actual)[1]))
@@ -14,7 +14,7 @@ plot.sim = function(sim, actual, quantiles=NULL, levels=NULL, ylim = NULL, lwd=2
     probs.upper = 0.5 + levels/200
     probs.lower = 0.5 - levels/200
     probs = c(probs.lower, probs.upper)
-    probs = probs[order(probs)]
+    #probs = probs[order(probs)]
     quantiles=ts(t(apply(sim, 1, function(r)quantile(r, probs = probs))), start = tsp_sim[1], frequency = tsp_sim[3])
     #sim_mean = rowMeans(sim)
   } else {
@@ -30,15 +30,60 @@ plot.sim = function(sim, actual, quantiles=NULL, levels=NULL, ylim = NULL, lwd=2
     nc = ncol(sim)
   }
 
-  #create ts of actual data with times for sims appended as NAs
+  #get last observation and last time in order to fill the gap
+  # lastObs = actual[length(actual)]
+  # lastTime = time(actual)[length(actual)]
+  # #append the last observation to the beginning
+  # # sim_quantiles = rbind(rep(lastObs, ncol(quantiles)), quantiles)
+  sim_quantiles = ts(data = rbind(rep(lastObs, ncol(quantiles)), quantiles),
+                     start = lastTime,
+                     frequency = tsp_sim[3])
+  # # sim_mean = c(lastObs, rowMeans(sim))
+  sim_mean = ts(data = c(lastObs,rowMeans(sim)),
+                start = lastTime,
+                frequency = tsp_sim[3])
+
+  df_sim = data.frame(date=zoo::as.yearmon(time(sim_mean)), weight = as.vector(sim_mean))
+  nint <- length(levels)
+  for(i in 1:nint){
+    df_sim = cbind(df_sim, as.vector(sim_quantiles[, i]), as.vector(sim_quantiles[, ncol(sim_quantiles)/2 + i]))
+    colnames(df_sim)[(ncol(df_sim)-1):ncol(df_sim)] = c(paste0("lower_", levels[i]), paste0("upper_", levels[i]))
+
+  }
+
+  df_act = data.frame(date = zoo::as.yearmon(time(actual)), weight = as.vector(actual))
+  df_act = cbind(df_act, replicate(expr = rep(NA_real_, nrow(df_act)), n = ncol(quantiles)))
+  colnames(df_act) = colnames(df_sim)
+
+  df = rbind(cbind(df_act, type = rep("actual", nrow(df_act))),  cbind(df_sim, type = rep("simulation", nrow(df_sim))))
+
+  p = ggplot2::ggplot(df, ggplot2::aes(date, weight))
+
+  p = p + ggplot2::geom_ribbon(ggplot2::aes(ymin = lower_95, ymax = upper_95), alpha = 0.1)
+  p = p + ggplot2::geom_ribbon(ggplot2::aes(ymin = lower_80, ymax = upper_80), alpha = 0.15)
+  p = p + ggplot2::geom_line(ggplot2::aes(color=type))
+  p
+
+
+
+   #create ts of actual data with times for sims appended as NAs
   ts_actual_alldates = ts(data = c(as.vector(actual), rep(NA, nr)), start = tsp_act[1], frequency = tsp_act[3])
+
+
+
+
+  df = data.frame(date=zoo::as.yearmon(time(ts_actual_alldates)), weight = as.vector(ts_actual_alldates))
+  df$type = rep(NA_character_, nrow(df))
+  df$type[!is.na(df$weight)] = "actual"
+  df[is.na(df$weight), "weight"] = rowMeans(sim)
+  df[is.na(df$type), "type"] = "simulation"
+
+
+
   #actual_alldates = c(as.vector(actual), rep(NA, nr))
 
 
 
-  #get last observation and last time in order to fill the gap
-  lastObs = actual[length(actual)]
-  lastTime = time(actual)[length(actual)]
 
 
   #calculate quantiles and mean of the simulated data
@@ -47,15 +92,7 @@ plot.sim = function(sim, actual, quantiles=NULL, levels=NULL, ylim = NULL, lwd=2
   #sim_mean = ts(rowMeans(sim), start = tsp_sim[1], frequency = tsp_sim[3])
 
 
-  #append the last observation to the beginning
-  # sim_quantiles = rbind(rep(lastObs, ncol(quantiles)), quantiles)
-  sim_quantiles = ts(data = rbind(rep(lastObs, ncol(quantiles)), quantiles),
-                     start = lastTime,
-                     frequency = tsp_sim[3])
-  # sim_mean = c(lastObs, rowMeans(sim))
-  sim_mean = ts(data = c(lastObs,rowMeans(sim)),
-                start = lastTime,
-                frequency = tsp_sim[3])
+
 
 
 
@@ -70,7 +107,7 @@ plot.sim = function(sim, actual, quantiles=NULL, levels=NULL, ylim = NULL, lwd=2
   }
 
   xxx <- time(sim_quantiles)
-  nint <- ncol(sim_quantiles)/2
+
 
   if(is.null(ylim)){
     rng = range(sim_quantiles)
