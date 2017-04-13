@@ -61,6 +61,7 @@ Collate:
     'get_rate.R'
     'get_series.R'
     'ggCashFlows.R'
+    'ggplot.sim.R'
     'hello.R'
     'loadIndices.R'
     'loadMLFI.R'
