@@ -63,9 +63,11 @@ Collate:
     'ggCashFlows.R'
     'ggplot.sim.R'
     'hello.R'
+    'loadFactorData.R'
     'loadIndices.R'
     'loadMLFI.R'
     'mae.R'
+    'makeProxies.R'
     'me.R'
     'my_cvts.R'
     'plot.sim.R'
@@ -88,4 +90,5 @@ Collate:
     'simulate_stlm.R'
     'simulate_stlm_rec.R'
     'stlm_factory.R'
+    'updateHFReturns.R'
 RoxygenNote: 6.0.0

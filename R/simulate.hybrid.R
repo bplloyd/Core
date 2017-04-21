@@ -68,23 +68,26 @@ simulate.hybrid = function(fit_list, nahead=12, N=1000, weights = rep(1/length(f
       sim_mean = ts(rowMeans(res$hybrid), start = tsp_sim[1], frequency = tsp_sim[3])
 
       sim_quantiles_hyb = sim_quantiles[[1]]
-      for(i in 1:nrow(sim_quantiles_hyb)){
-        for(j in 1:ncol(sim_quantiles_hyb)){
-          for(k in 2:length(sim_quantiles)){
-            if(j > ncol(sim_quantiles_hyb)/2){
-              if(sim_quantiles[[k]][i, j] > sim_quantiles_hyb[i, j]){
-                sim_quantiles_hyb[i, j] = sim_quantiles[[k]][i, j]
-              }
-            } else {
-              if(sim_quantiles[[k]][i, j] < sim_quantiles_hyb[i, j]){
-                sim_quantiles_hyb[i, j] = max(sim_quantiles[[k]][i, j],  minsim)
+      if(length(sim_quantiles) > 1){
+        for(i in 1:nrow(sim_quantiles_hyb)){
+          for(j in 1:ncol(sim_quantiles_hyb)){
+            for(k in 2:length(sim_quantiles)){
+              if(j > ncol(sim_quantiles_hyb)/2){
+                if(sim_quantiles[[k]][i, j] > sim_quantiles_hyb[i, j]){
+                  sim_quantiles_hyb[i, j] = sim_quantiles[[k]][i, j]
+                }
               } else {
-                sim_quantiles_hyb[i, j] = max(sim_quantiles_hyb[i, j], minsim)
+                if(sim_quantiles[[k]][i, j] < sim_quantiles_hyb[i, j]){
+                  sim_quantiles_hyb[i, j] = max(sim_quantiles[[k]][i, j],  minsim)
+                } else {
+                  sim_quantiles_hyb[i, j] = max(sim_quantiles_hyb[i, j], minsim)
+                }
               }
             }
           }
         }
       }
+
 
       res$hybrid = list(simulations = res$hybrid, quantiles = sim_quantiles_hyb, mean = sim_mean)
       for(n in names(res$individual)){
