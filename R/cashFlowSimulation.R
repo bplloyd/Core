@@ -8,13 +8,13 @@ cashFlowSimulation = function(I0, L0, D0, R0, C0, sig_S, sig_F, mu_S, mu_F, dist
   sig_S = 0.08
   mu_S = 0.04
   sig_F = 0.16
-  mu_F = 0.08
+  mu_F = 0.10
   rho = 0.4
   lambda = 0.2
-  v = 0
-  n = 1000
+  v = 0.025
+  n = 10000
   delta=1/12
-  t=4
+  t=8
   delta_mu = mu_S - mu_F
   delta_var_S = sig_S^2 - sig_S * sig_F * rho
   delta_var_F = sig_F^2 - sig_S * sig_F * rho
@@ -25,8 +25,8 @@ cashFlowSimulation = function(I0, L0, D0, R0, C0, sig_S, sig_F, mu_S, mu_F, dist
 
 
   #------------------historical parameters
-  y = 2016
-  lastDate = as.Date.character(paste0(y, "-12-31"))
+  y = 2017
+  lastDate = as.Date.character(paste0(y, "-03-31"))
 
   dists = as_ts(get_series(coreFund, "Distributions_Total", clean  = F, end = lastDate))
   calls =  as_ts(get_series(coreFund, "Calls_Total_Gross", clean = F, end = lastDate))
@@ -78,10 +78,14 @@ cashFlowSimulation = function(I0, L0, D0, R0, C0, sig_S, sig_F, mu_S, mu_F, dist
   #                 net = forecast::nnetar(y = dist_rate, p = 1, P = 3, lambda = lam))
 
   #single arima
-  fit_list = list(arima = forecast::Arima(y = dist_rate, order = c(0, 1, 1), seasonal = c(3, 0, 0), lambda = lam)
-                  )
+  lam = BoxCox.lambda(dist_rate)
+  #lam = NULL
 
-  fit_sim = simulate.hybrid(fit_list, nahead = t*12, N = n)
+  fit_stlm = stlm(y = dist_rate, s.window = 13, method = "ets", etsmodel = "ZAN", lambda = lam, biasadj = T)
+  fit_arima = Arima(y = dist_rate, order = c(0, 1, 1), seasonal = c(3, 0, 0), include.drift = T, lambda = lam, biasadj =T)
+
+  sim_hyb = simulate.hybrid(fit_list = list(arima = fit_arima, stlm = fit_stlm), nahead = t*12, N = n, bootErrs = T)
+
 
 
   # roll_sims = lapply(X = 2008:2014,function(y){
@@ -100,7 +104,7 @@ cashFlowSimulation = function(I0, L0, D0, R0, C0, sig_S, sig_F, mu_S, mu_F, dist
   #
 
 
-  sim_dist_rate = as.matrix((1/delta) *  fit_sim$hybrid$simulations)
+  sim_dist_rate = as.matrix((1/delta) *  sim_hyb$hybrid$simulations)
   #}
 
 
@@ -222,15 +226,31 @@ cashFlowSimulation = function(I0, L0, D0, R0, C0, sig_S, sig_F, mu_S, mu_F, dist
   sim_tot_NAV =  ts(simulations[3:nrow(simulations),,"P"], start = tsp(sim_dist_rate)[1], frequency = tsp(sim_dist_rate)[3])
   act_tot_NAV = ts(allocations$TOTAL/1e+06, start = c(2004, 1), frequency = 12)
 
+  sim_dists_cum = ts(simulations[3:nrow(simulations),,"R"], start = tsp(sim_dist_rate)[1], frequency = tsp(sim_dist_rate)[3])
+  act_dists_cum = ts(cumsum(dists), start = c(2004, 1), frequency = 12)
 
+  sim_calls_cum = ts(simulations[3:nrow(simulations),,"D"], start = tsp(sim_dist_rate)[1], frequency = tsp(sim_dist_rate)[3])
+  act_calls_cum = ts(cumsum(calls), start = c(2004, 1), frequency = 12)
+
+  sim_net_cum = sim_dists_cum - sim_calls_cum
+  act_net_cum = act_dists_cum - act_calls_cum
+
+
+
+  # plot.sim(sim_illiq_NAV, actual = act_illiq_NAV, levels = c(80, 95), main = "Private Equity NAV Simulation", ylab = "NAV (millions)", xlab="year")
+  # plot.sim(sim_liq_NAV, actual = act_liq_NAV, ylim = c(0, 1200),
+  #          levels = c(80, 95),
+  #          main = "Hedge Fund NAV Simulation",
+  #          ylab = "NAV (millions)", xlab="year")
+  #
+  # plot.sim(sim_dists_cum, actual = act_dists_cum, levels = c(80, 95), main = "Private Equity Distributions Simulation")
+  # plot.sim(sim_calls_cum, actual = act_calls_cum, levels = c(80, 95), main = "Private Equity Calls Simulation")
+  # plot.sim(sim_net_cum, actual = act_net_cum, levels = c(80, 95), main = "Private Equity Net CF Simulation", ylim = c(-300, 350))
+  #
+  # plot.sim(sim = sim_dist_rate/12, actual = dist_rate,  levels = c(80, 95))
+  #
+  # plot.sim(sim_liq, actual = act_liq, levels = c(80, 95), main = "Hedge Fund Weight Simulation", ylab = "weight", xlab="year", ylim = c(0, 1))
   plot.sim(sim_illiq, actual = act_illiq, levels = c(80, 95), main = "Private Equity Weight Simulation", ylab = "weight", xlab="year", ylim = c(0, 1))
-  plot.sim(sim_liq, actual = act_liq, levels = c(80, 95), main = "Hedge Fund Weight Simulation", ylab = "weight", xlab="year", ylim = c(0, 1))
-  plot.sim(sim_illiq_NAV, actual = act_illiq_NAV, levels = c(80, 95), main = "Private Equity NAV Simulation", ylab = "NAV (millions)", xlab="year")
-  plot.sim(sim_liq_NAV, actual = act_liq_NAV, ylim = c(0, 1200),
-           levels = c(80, 95),
-           main = "Hedge Fund NAV Simulation",
-           ylab = "NAV (millions)", xlab="year")
-
 
 
   # wI_std = wI
